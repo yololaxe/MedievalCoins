@@ -1,0 +1,11 @@
+{
+  "item.medieval_coins.bronze_coin" : "Pièce de bronze",
+  "item.medieval_coins.silver_coin" : "Pièce d'argent",
+  "item.medieval_coins.gold_coin" : "Pièce d'or",
+  "item.medieval_coins.purse" : "Bourse",
+  "container.purse": "Bourse",
+  "itemGroup.medieval_coins": "Pièces médiévales",
+  "entity.medieval_coins.banker": "Banquier",
+  "item.medieval_coins.banker_spawn_egg": "Oeuf de banquier"
+
+}

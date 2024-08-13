@@ -1,0 +1,16 @@
+{
+  "item.medieval_coins.bronze_coin" : "Bronze Coin",
+  "item.medieval_coins.silver_coin" : "Silver Coin",
+  "item.medieval_coins.gold_coin" : "Gold Coin",
+  "item.medieval_coins.purse" : "Purse",
+  "container.purse": "Purse",
+  "itemGroup.medieval_coins": "Medieval Coins",
+  "entity.medieval_coins.banker": "Banker",
+  "item.medieval_coins.banker_spawn_egg": "Banker Spawn Egg",
+  "gui.medieval_coins.banker_gui.button_change_money": "Change money",
+  "gui.medieval_coins.banker_gui.label_12_bronze_1208": "+12 Bronze 12/08",
+  "gui.medieval_coins.banker_gui.label_empty": "-1 Silver 11/08",
+  "gui.medieval_coins.banker_gui.label_1234": "1234",
+  "gui.medieval_coins.banker_gui.button_withdraw_money": "Withdraw money",
+  "gui.medieval_coins.banker_gui.button_deposit_money": "Deposit money"
+}

@@ -1,0 +1,9 @@
+Manifest-Version: 1.0
+Specification-Title: medieval_coins
+Specification-Vendor: Yololaxe & Imanassy
+Specification-Version: 1
+Implementation-Title: MedievalCoins
+Implementation-Version: 1.0
+Implementation-Vendor: Yololaxe & Imanassy
+Implementation-Timestamp: 2024-08-13T14:10:49+0200
+
