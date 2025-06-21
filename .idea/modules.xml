@@ -4,6 +4,8 @@
     <modules>
       <module fileurl="file://$PROJECT_DIR$/.idea/modules/MedievalCoins.main.iml" filepath="$PROJECT_DIR$/.idea/modules/MedievalCoins.main.iml" />
       <module fileurl="file://$PROJECT_DIR$/.idea/modules/MedievalCoins.test.iml" filepath="$PROJECT_DIR$/.idea/modules/MedievalCoins.test.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/fr.renblood.MedievalCoins.main.iml" filepath="$PROJECT_DIR$/.idea/modules/fr.renblood.MedievalCoins.main.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/fr.renblood.MedievalCoins.test.iml" filepath="$PROJECT_DIR$/.idea/modules/fr.renblood.MedievalCoins.test.iml" />
     </modules>
   </component>
 </project>

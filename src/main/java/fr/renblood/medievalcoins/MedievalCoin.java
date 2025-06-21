@@ -38,7 +38,6 @@ import java.util.function.BiConsumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
-import static fr.renblood.medievalcoins.creative.CreativeTab.TABS;
 import static fr.renblood.medievalcoins.init.EntityInit.BANKER;
 import static fr.renblood.medievalcoins.init.EntityInit.ENTITY_TYPES;
 
@@ -64,9 +63,11 @@ public class MedievalCoin {
         MinecraftForge.EVENT_BUS.register(this);
         Coins.register(modEventBus);
         MENUS.register(modEventBus);
-        TABS.register(modEventBus);
+        //TABS.register(modEventBus);
         ENTITY_TYPES.register(modEventBus);
         MedievalCoinsModMenus.REGISTRY.register(modEventBus);
+
+
 
 
         LOGGER.info("Julien a bien réussi à lancer ce super mod");

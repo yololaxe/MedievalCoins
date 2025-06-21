@@ -5,5 +5,5 @@ Specification-Version: 1
 Implementation-Title: MedievalCoins
 Implementation-Version: 1.0
 Implementation-Vendor: Yololaxe & Imanassy
-Implementation-Timestamp: 2024-08-13T14:10:49+0200
+Implementation-Timestamp: 2025-06-21T12:50:49+0200
 
