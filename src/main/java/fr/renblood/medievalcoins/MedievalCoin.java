@@ -64,7 +64,7 @@ public class MedievalCoin {
         Coins.register(modBus);
         ENTITY_TYPES.register(modBus);
         MedievalCoinsModMenus.REGISTRY.register(modBus);
-
+        modBus.addListener(this::commonSetup);
         // 3) Écoute du bus Forge
         MinecraftForge.EVENT_BUS.register(this);
 
@@ -75,6 +75,7 @@ public class MedievalCoin {
     private void commonSetup(final FMLCommonSetupEvent event) {
         event.enqueueWork(() -> {
             // 5) Register des écrans côté client
+            LOGGER.info("[MedievalCoins] Enregistrement des écrans client");
             MenuScreens.register(MedievalCoinsModMenus.BANKER_GUI.get(),  BankerGuiScreen::new);
             MenuScreens.register(MedievalCoinsModMenus.CHANGE_GUI.get(),  ChangeGUIScreen::new);
             MenuScreens.register(MedievalCoinsModMenus.DEPOSIT_MENU.get(), DepositGuiScreen::new);

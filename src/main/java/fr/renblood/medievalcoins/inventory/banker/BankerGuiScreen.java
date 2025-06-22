@@ -30,7 +30,7 @@ public class BankerGuiScreen extends AbstractContainerScreen<BankerGuiMenu> {
 	private String moneyDisplay = "0F";
 	private String moneyTooltip = "0 pièce de fer";
 
-	private static final HashMap<String, Object> guistate = BankerGuiMenu.guistate;
+	private static final HashMap<String, Object> guistate = (HashMap<String, Object>) BankerGuiMenu.guistate;
 
 	public BankerGuiScreen(BankerGuiMenu container, Inventory inv, Component title) {
 		super(container, inv, title);

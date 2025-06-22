@@ -1,52 +1,147 @@
-// src/main/java/fr/renblood/medievalcoins/network/SubmitDepositMessage.java
 package fr.renblood.medievalcoins.network;
 
+import com.google.gson.JsonObject;
 import fr.renblood.medievalcoins.MedievalCoin;
+import fr.renblood.medievalcoins.client.model.PlayerModel;
+import fr.renblood.medievalcoins.inventory.banker.BankerGuiMenu;
+import fr.renblood.medievalcoins.inventory.banker.DepositGuiMenu;
+import io.netty.buffer.Unpooled;
+import net.minecraft.core.BlockPos;
 import net.minecraft.network.FriendlyByteBuf;
+import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.MenuProvider;
+import net.minecraft.world.SimpleContainer;
+import net.minecraft.world.entity.player.Inventory;
+import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.inventory.AbstractContainerMenu;
+import net.minecraft.world.item.ItemStack;
 import net.minecraftforge.network.NetworkEvent;
+import net.minecraftforge.network.NetworkHooks;
 import net.minecraftforge.network.PacketDistributor;
 
 import java.util.function.Supplier;
 
 public class SubmitDepositMessage {
-    private final int amount;
+    private final BlockPos pos;
+    private final ItemStack iron, bronze, silver, gold;
 
-    public SubmitDepositMessage(int amount) {
-        this.amount = amount;
+    public SubmitDepositMessage(BlockPos pos,
+                                ItemStack iron,
+                                ItemStack bronze,
+                                ItemStack silver,
+                                ItemStack gold) {
+        this.pos    = pos.immutable();
+        this.iron   = iron.copy();
+        this.bronze = bronze.copy();
+        this.silver = silver.copy();
+        this.gold   = gold.copy();
     }
 
-    // sérialisation
     public static void encode(SubmitDepositMessage msg, FriendlyByteBuf buf) {
-        buf.writeInt(msg.amount);
+        buf.writeBlockPos(msg.pos);
+        buf.writeItem(msg.iron);
+        buf.writeItem(msg.bronze);
+        buf.writeItem(msg.silver);
+        buf.writeItem(msg.gold);
     }
 
     public static SubmitDepositMessage decode(FriendlyByteBuf buf) {
-        return new SubmitDepositMessage(buf.readInt());
+        BlockPos pos      = buf.readBlockPos();
+        ItemStack iron    = buf.readItem();
+        ItemStack bronze  = buf.readItem();
+        ItemStack silver  = buf.readItem();
+        ItemStack gold    = buf.readItem();
+        return new SubmitDepositMessage(pos, iron, bronze, silver, gold);
     }
 
-    public static void handle(SubmitDepositMessage msg, Supplier<NetworkEvent.Context> ctx) {
-        ctx.get().enqueueWork(() -> {
-            ServerPlayer sender = ctx.get().getSender();
+    public static void handle(SubmitDepositMessage msg, Supplier<NetworkEvent.Context> ctxSupplier) {
+        NetworkEvent.Context ctx = ctxSupplier.get();
+        ctx.enqueueWork(() -> {
+            ServerPlayer sender = ctx.getSender();
             if (sender == null) return;
 
-            String mcId = sender.getGameProfile().getName();  // correctement c'est id_minecraft
+            // 1) Récupérer le container actuel
+            if (!(sender.containerMenu instanceof DepositGuiMenu depositMenu)) return;
+            SimpleContainer inv = depositMenu.getDepositInv();
+
+            // 2) Lire les quantités
+            int ironCount   = inv.getItem(0).getCount();
+            int bronzeCount = inv.getItem(1).getCount();
+            int silverCount = inv.getItem(2).getCount();
+            int goldCount   = inv.getItem(3).getCount();
+
+            // 3) Conversion en "cuivre"
+            final int PER_IRON   = 1;
+            final int PER_BRONZE = 64 * PER_IRON;
+            final int PER_SILVER = 64 * PER_BRONZE;
+            final int PER_GOLD   = 64 * PER_SILVER;
+            int totalCopper = ironCount * PER_IRON
+                    + bronzeCount * PER_BRONZE
+                    + silverCount * PER_SILVER
+                    + goldCount * PER_GOLD;
+
+            // 4) Vider les slots de dépôt
+            for (int i = 0; i < 4; i++) {
+                inv.setItem(i, ItemStack.EMPTY);
+            }
+
             try {
-                // effectue le dépôt et récupère le nouveau solde brut
-                int newBalance = ApiClient.deposit(mcId, msg.amount);
+                // 5) Charger ou récupérer le PlayerModel
+                String mcUuid = sender.getGameProfile().getId().toString();
+                PlayerModel pm = PlayerCache.getPlayer(mcUuid);
+                if (pm == null) {
+                    pm = ApiClient.getPlayer(mcUuid);
+                    PlayerCache.updatePlayer(pm);
+                }
 
-                // met à jour le cache local
-                PlayerCache.updatePlayer( ApiClient.getPlayer(mcId) );
+                // 6) Appel API pour déposer et récupérer le nouveau solde
+                int newBalance = ApiClient.deposit(pm.id_minecraft, totalCopper);
+                pm.money = newBalance;
+                PlayerCache.updatePlayer(pm);
 
-                // notifie le client pour rafraîchir l’affichage
+                // 7) Envoyer la mise à jour au client
+                MoneyUpdateMessage update = new MoneyUpdateMessage(mcUuid, newBalance);
                 MedievalCoin.PACKET_HANDLER.send(
                         PacketDistributor.PLAYER.with(() -> sender),
-                        new MoneyUpdateMessage(mcId, newBalance)
+                        update
+                );
+
+                // 8) Ré-ouvrir le GUI du banquier à la même position
+                BlockPos reopenPos = depositMenu.getPos();
+                MenuProvider provider = new MenuProvider() {
+                    @Override
+                    public Component getDisplayName() {
+                        return Component.translatable("gui.medieval_coins.banker_gui.title");
+                    }
+
+                    @Override
+                    public AbstractContainerMenu createMenu(int windowId, Inventory inv, Player player) {
+                        // Recréer un FriendlyByteBuf qui contient la position
+                        FriendlyByteBuf buf = new FriendlyByteBuf(Unpooled.buffer());
+                        buf.writeBlockPos(reopenPos);
+                        return new BankerGuiMenu(windowId, inv, buf);
+                    }
+                };
+                // Utiliser l'overload qui prend directement le BlockPos
+                NetworkHooks.openScreen(sender, provider, reopenPos);
+
+                // 9) Confirmation en chat
+                sender.sendSystemMessage(
+                        Component.translatable("chat.medieval_coins.deposit_success", totalCopper)
+                );
+
+                MedievalCoin.LOGGER.info(
+                        "Deposit of {} copper for {} succeeded, new balance = {}",
+                        totalCopper, mcUuid, newBalance
                 );
             } catch (Exception e) {
-                MedievalCoin.LOGGER.error("Erreur dépôt API pour " + mcId, e);
+                MedievalCoin.LOGGER.error(
+                        "Failed to deposit for " + sender.getGameProfile().getId(),
+                        e
+                );
             }
         });
-        ctx.get().setPacketHandled(true);
+        ctx.setPacketHandled(true);
     }
 }

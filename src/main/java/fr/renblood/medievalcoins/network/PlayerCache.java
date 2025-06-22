@@ -23,4 +23,10 @@ public class PlayerCache {
         tmp.add(pm);
         players = Collections.unmodifiableList(tmp);
     }
+    public static PlayerModel getPlayer(String mcId) {
+        return players.stream()
+                .filter(p -> p.id_minecraft.equals(mcId))
+                .findFirst()
+                .orElse(null);
+    }
 }
