@@ -1,38 +1,39 @@
+// src/main/java/fr/renblood/medievalcoins/MedievalCoin.java
 package fr.renblood.medievalcoins;
 
 import fr.renblood.medievalcoins.client.renderer.BankerRenderer;
 import fr.renblood.medievalcoins.init.MedievalCoinsModMenus;
-import fr.renblood.medievalcoins.inventory.purse.PurseContainer;
+import fr.renblood.medievalcoins.inventory.banker.BankerGuiScreen;
+import fr.renblood.medievalcoins.inventory.banker.ChangeGUIScreen;
+import fr.renblood.medievalcoins.inventory.banker.DepositGuiScreen;
 import fr.renblood.medievalcoins.inventory.purse.PurseScreen;
 import fr.renblood.medievalcoins.item.Coins;
+import fr.renblood.medievalcoins.network.*;
+import fr.renblood.medievalcoins.procedures.OpenDepositGuiMessage;
+
 import net.minecraft.client.gui.screens.MenuScreens;
 import net.minecraft.client.renderer.entity.EntityRenderers;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.inventory.MenuType;
 import net.minecraft.world.item.ItemStack;
+
 import net.minecraftforge.common.MinecraftForge;
-import net.minecraftforge.common.extensions.IForgeMenuType;
 import net.minecraftforge.event.TickEvent;
-import net.minecraftforge.eventbus.api.IEventBus;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.fml.event.lifecycle.FMLCommonSetupEvent;
 import net.minecraftforge.fml.javafmlmod.FMLJavaModLoadingContext;
 import net.minecraftforge.fml.util.thread.SidedThreadGroups;
-import net.minecraftforge.network.NetworkEvent;
+import net.minecraftforge.network.NetworkDirection;
 import net.minecraftforge.network.NetworkRegistry;
 import net.minecraftforge.network.simple.SimpleChannel;
-import net.minecraftforge.registries.DeferredRegister;
 import net.minecraftforge.registries.ForgeRegistries;
-import net.minecraftforge.registries.RegistryObject;
+
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import java.util.AbstractMap;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.List;
+import java.util.*;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.function.BiConsumer;
 import java.util.function.Function;
@@ -44,72 +45,112 @@ import static fr.renblood.medievalcoins.init.EntityInit.ENTITY_TYPES;
 @Mod(MedievalCoin.MODID)
 public class MedievalCoin {
     public static final String MODID = "medieval_coins";
-    private static final Logger LOGGER = LogManager.getLogger();
+    public static final Logger LOGGER = LogManager.getLogger();
+    private static final String PROTOCOL_VERSION = "1";
 
-    public static final DeferredRegister<MenuType<?>> MENUS = DeferredRegister.create(ForgeRegistries.MENU_TYPES, MODID);
-
-    public static final RegistryObject<MenuType<PurseContainer>> PURSE_CONTAINER = MENUS.register("purse_container",
-            () -> IForgeMenuType.create((id, inv, data) -> {
-                ItemStack purseStack = data.readItem();
-                return new PurseContainer(id, inv, purseStack);
-            }));
-
-
+    // 1) Channel réseau
+    public static final SimpleChannel PACKET_HANDLER = NetworkRegistry.newSimpleChannel(
+            new ResourceLocation(MODID, MODID),
+            () -> PROTOCOL_VERSION,
+            PROTOCOL_VERSION::equals,
+            PROTOCOL_VERSION::equals
+    );
+    private static int messageID = 0;
 
     public MedievalCoin() {
-        IEventBus modEventBus = FMLJavaModLoadingContext.get().getModEventBus();
-        modEventBus.addListener(this::commonSetup);
+        var modBus = FMLJavaModLoadingContext.get().getModEventBus();
 
+        // 2) Enregistrement des DeferredRegister (items, entités, menus…)
+        Coins.register(modBus);
+        ENTITY_TYPES.register(modBus);
+        MedievalCoinsModMenus.REGISTRY.register(modBus);
+
+        // 3) Écoute du bus Forge
         MinecraftForge.EVENT_BUS.register(this);
-        Coins.register(modEventBus);
-        MENUS.register(modEventBus);
-        //TABS.register(modEventBus);
-        ENTITY_TYPES.register(modEventBus);
-        MedievalCoinsModMenus.REGISTRY.register(modEventBus);
 
-
-
-
-        LOGGER.info("Julien a bien réussi à lancer ce super mod");
-
-        MinecraftForge.EVENT_BUS.register(this);
+        // 4) Réseau
+        registerNetworkMessages();
     }
 
     private void commonSetup(final FMLCommonSetupEvent event) {
         event.enqueueWork(() -> {
-            MenuScreens.register(PURSE_CONTAINER.get(), PurseScreen::new);
+            // 5) Register des écrans côté client
+            MenuScreens.register(MedievalCoinsModMenus.BANKER_GUI.get(),  BankerGuiScreen::new);
+            MenuScreens.register(MedievalCoinsModMenus.CHANGE_GUI.get(),  ChangeGUIScreen::new);
+            MenuScreens.register(MedievalCoinsModMenus.DEPOSIT_MENU.get(), DepositGuiScreen::new);
+            MenuScreens.register(MedievalCoinsModMenus.PURSE_CONTAINER.get(), PurseScreen::new);
+
+            // 6) Renderer de l'entité banquier
             EntityRenderers.register(BANKER.get(), BankerRenderer::new);
         });
     }
 
-    private static final String PROTOCOL_VERSION = "1";
-    public static final SimpleChannel PACKET_HANDLER = NetworkRegistry.newSimpleChannel(new ResourceLocation(MODID, MODID), () -> PROTOCOL_VERSION, PROTOCOL_VERSION::equals, PROTOCOL_VERSION::equals);
-    private static int messageID = 0;
-
-    public static <T> void addNetworkMessage(Class<T> messageType, BiConsumer<T, FriendlyByteBuf> encoder, Function<FriendlyByteBuf, T> decoder, BiConsumer<T, Supplier<NetworkEvent.Context>> messageConsumer) {
-        PACKET_HANDLER.registerMessage(messageID, messageType, encoder, decoder, messageConsumer);
-        messageID++;
+    private void registerNetworkMessages() {
+        // 1) Refresh GUI banquier
+        PACKET_HANDLER.registerMessage(
+                messageID++,
+                BankerGuiRefreshMessage.class,
+                BankerGuiRefreshMessage::encode,
+                BankerGuiRefreshMessage::decode,
+                BankerGuiRefreshMessage::handle,
+                Optional.of(NetworkDirection.PLAY_TO_SERVER)
+        );
+        // 2) Mise à jour du solde
+        PACKET_HANDLER.registerMessage(
+                messageID++,
+                MoneyUpdateMessage.class,
+                MoneyUpdateMessage::encode,
+                MoneyUpdateMessage::decode,
+                MoneyUpdateMessage::handle,
+                Optional.of(NetworkDirection.PLAY_TO_CLIENT)
+        );
+        // 3) Ouvrir GUI dépôt
+        PACKET_HANDLER.registerMessage(
+                messageID++,
+                OpenDepositGuiMessage.class,
+                OpenDepositGuiMessage::encode,
+                OpenDepositGuiMessage::decode,
+                OpenDepositGuiMessage::handle,
+                Optional.of(NetworkDirection.PLAY_TO_SERVER)
+        );
+        // 4) Soumettre dépôt
+        PACKET_HANDLER.registerMessage(
+                messageID++,
+                SubmitDepositMessage.class,
+                SubmitDepositMessage::encode,
+                SubmitDepositMessage::decode,
+                SubmitDepositMessage::handle,
+                Optional.of(NetworkDirection.PLAY_TO_SERVER)
+        );
+        // 5) Boutons divers (ex : change money)
+        PACKET_HANDLER.registerMessage(
+                messageID++,
+                BankerGuiButtonMessage.class,
+                BankerGuiButtonMessage::buffer,
+                BankerGuiButtonMessage::new,
+                BankerGuiButtonMessage::handler,
+                Optional.of(NetworkDirection.PLAY_TO_SERVER)
+        );
     }
 
-    private static final Collection<AbstractMap.SimpleEntry<Runnable, Integer>> workQueue = new ConcurrentLinkedQueue<>();
-
+    // (facultatif) file de tâches côté serveur
+    private static final Collection<Map.Entry<Runnable,Integer>> workQueue = new ConcurrentLinkedQueue<>();
     public static void queueServerWork(int tick, Runnable action) {
-        if (Thread.currentThread().getThreadGroup() == SidedThreadGroups.SERVER)
+        if (Thread.currentThread().getThreadGroup().getName().contains("Server"))
             workQueue.add(new AbstractMap.SimpleEntry<>(action, tick));
     }
 
     @SubscribeEvent
-    public void tick(TickEvent.ServerTickEvent event) {
-        if (event.phase == TickEvent.Phase.END) {
-            List<AbstractMap.SimpleEntry<Runnable, Integer>> actions = new ArrayList<>();
-            workQueue.forEach(work -> {
-                work.setValue(work.getValue() - 1);
-                if (work.getValue() == 0)
-                    actions.add(work);
-            });
-            actions.forEach(e -> e.getKey().run());
-            workQueue.removeAll(actions);
+    public void tick(TickEvent.ServerTickEvent ev) {
+        if (ev.phase == TickEvent.Phase.END) {
+            var toRun = new ArrayList<Map.Entry<Runnable,Integer>>();
+            for (var e : workQueue) {
+                int t = e.getValue() - 1;
+                if (t <= 0) toRun.add(e);
+                else e.setValue(t);
+            }
+            toRun.forEach(e -> e.getKey().run());
+            workQueue.removeAll(toRun);
         }
     }
-
 }

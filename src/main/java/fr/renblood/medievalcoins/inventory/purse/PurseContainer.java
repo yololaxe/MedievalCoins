@@ -4,6 +4,7 @@ import fr.renblood.medievalcoins.MedievalCoin;
 import fr.renblood.medievalcoins.inventory.RestrictedSlotContainer;
 import fr.renblood.medievalcoins.item.Coins;
 import fr.renblood.medievalcoins.item.Purse;
+import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.world.SimpleContainer;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.entity.player.Player;
@@ -15,13 +16,15 @@ import net.minecraft.world.item.ItemStack;
 import java.util.HashSet;
 import java.util.Set;
 
+import static fr.renblood.medievalcoins.init.MedievalCoinsModMenus.PURSE_CONTAINER;
+
 public class PurseContainer extends AbstractContainerMenu {
     private final SimpleContainer container;
 
 
 
     public PurseContainer(int id, Inventory playerInventory, ItemStack purseStack) {
-        super(MedievalCoin.PURSE_CONTAINER.get(), id);
+        super(PURSE_CONTAINER.get(), id);
 
         Purse purseItem = (Purse) purseStack.getItem();
         this.container = purseItem.getInventory(purseStack); // Utiliser `this.container` pour initialiser correctement la variable membre
@@ -62,6 +65,11 @@ public class PurseContainer extends AbstractContainerMenu {
             Purse purseItem = (Purse) purseStack.getItem();
             purseItem.saveInventory(purseStack, this.container);
         }
+    }
+
+    public static PurseContainer fromNetwork(int windowId, Inventory playerInv, FriendlyByteBuf buf) {
+        ItemStack purseStack = buf.readItem();
+        return new PurseContainer(windowId, playerInv, purseStack);
     }
 
 

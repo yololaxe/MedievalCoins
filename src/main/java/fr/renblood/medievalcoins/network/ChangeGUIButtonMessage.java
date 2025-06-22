@@ -85,8 +85,5 @@ public class ChangeGUIButtonMessage {
 		}
 	}
 
-	@SubscribeEvent
-	public static void registerMessage(FMLCommonSetupEvent event) {
-		MedievalCoin.addNetworkMessage(ChangeGUIButtonMessage.class, ChangeGUIButtonMessage::buffer, ChangeGUIButtonMessage::new, ChangeGUIButtonMessage::handler);
-	}
+
 }

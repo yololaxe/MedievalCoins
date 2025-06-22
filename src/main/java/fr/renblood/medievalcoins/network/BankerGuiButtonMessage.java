@@ -66,8 +66,5 @@ public class BankerGuiButtonMessage {
 		}
 	}
 
-	@SubscribeEvent
-	public static void registerMessage(FMLCommonSetupEvent event) {
-		MedievalCoin.addNetworkMessage(BankerGuiButtonMessage.class, BankerGuiButtonMessage::buffer, BankerGuiButtonMessage::new, BankerGuiButtonMessage::handler);
-	}
+
 }
