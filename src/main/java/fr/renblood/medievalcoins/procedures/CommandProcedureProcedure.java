@@ -18,19 +18,33 @@ public class CommandProcedureProcedure {
 	public static void execute(LevelAccessor world, double x, double y, double z, Entity entity) {
 		if (entity == null)
 			return;
+
 		if (entity instanceof ServerPlayer _ent) {
 			BlockPos _bpos = BlockPos.containing(x, y, z);
-			NetworkHooks.openScreen((ServerPlayer) _ent, new MenuProvider() {
-				@Override
-				public Component getDisplayName() {
-					return Component.literal("BankerGui");
-				}
 
-				@Override
-				public AbstractContainerMenu createMenu(int id, Inventory inventory, Player player) {
-					return new BankerGuiMenu(id, inventory, new FriendlyByteBuf(Unpooled.buffer()).writeBlockPos(_bpos));
-				}
-			}, _bpos);
+			try {
+				NetworkHooks.openScreen(
+						_ent,
+						new MenuProvider() {
+							@Override
+							public Component getDisplayName() {
+								return Component.translatable("screen.medievalcoins.banker");
+							}
+
+							@Override
+							public AbstractContainerMenu createMenu(int id, Inventory inventory, Player player) {
+								FriendlyByteBuf buf = new FriendlyByteBuf(Unpooled.buffer());
+								buf.writeBlockPos(_bpos);
+								return new BankerGuiMenu(id, inventory, buf);
+							}
+						},
+						_bpos
+				);
+			} catch (Exception e) {
+				System.err.println("❌ Erreur lors de l'ouverture du menu /bank :");
+				e.printStackTrace();
+				_ent.sendSystemMessage(Component.literal("§cUne erreur est survenue lors de l'ouverture du menu."));
+			}
 		}
 	}
 }

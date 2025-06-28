@@ -1,26 +1,30 @@
 package fr.renblood.medievalcoins.network;
 
-import com.google.gson.JsonObject;
+
 import fr.renblood.medievalcoins.MedievalCoin;
 import fr.renblood.medievalcoins.client.model.PlayerModel;
 import fr.renblood.medievalcoins.inventory.banker.BankerGuiMenu;
 import fr.renblood.medievalcoins.inventory.banker.DepositGuiMenu;
-import io.netty.buffer.Unpooled;
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerPlayer;
-import net.minecraft.world.MenuProvider;
 import net.minecraft.world.SimpleContainer;
-import net.minecraft.world.entity.player.Inventory;
-import net.minecraft.world.entity.player.Player;
-import net.minecraft.world.inventory.AbstractContainerMenu;
 import net.minecraft.world.item.ItemStack;
 import net.minecraftforge.network.NetworkEvent;
-import net.minecraftforge.network.NetworkHooks;
 import net.minecraftforge.network.PacketDistributor;
 
 import java.util.function.Supplier;
+
+import net.minecraft.world.SimpleMenuProvider;
+
+import io.netty.buffer.Unpooled;
+import net.minecraft.world.MenuProvider;
+import net.minecraft.world.inventory.AbstractContainerMenu;
+import net.minecraft.world.entity.player.Inventory;
+import net.minecraft.world.entity.player.Player;
+import net.minecraftforge.network.NetworkHooks;
+
 
 public class SubmitDepositMessage {
     private final BlockPos pos;
@@ -97,7 +101,7 @@ public class SubmitDepositMessage {
 
                 // 6) Appel API pour déposer et récupérer le nouveau solde
                 int newBalance = ApiClient.deposit(pm.id_minecraft, totalCopper);
-                pm.money = newBalance;
+                pm.money        = newBalance;
                 PlayerCache.updatePlayer(pm);
 
                 // 7) Envoyer la mise à jour au client
@@ -108,23 +112,29 @@ public class SubmitDepositMessage {
                 );
 
                 // 8) Ré-ouvrir le GUI du banquier à la même position
+                // 8) Ré-ouvrir le GUI du banquier à la même position
+                // 8) Ré-ouvrir le GUI du banquier à la même position
                 BlockPos reopenPos = depositMenu.getPos();
-                MenuProvider provider = new MenuProvider() {
-                    @Override
-                    public Component getDisplayName() {
-                        return Component.translatable("gui.medieval_coins.banker_gui.title");
-                    }
 
-                    @Override
-                    public AbstractContainerMenu createMenu(int windowId, Inventory inv, Player player) {
-                        // Recréer un FriendlyByteBuf qui contient la position
-                        FriendlyByteBuf buf = new FriendlyByteBuf(Unpooled.buffer());
-                        buf.writeBlockPos(reopenPos);
-                        return new BankerGuiMenu(windowId, inv, buf);
-                    }
-                };
-                // Utiliser l'overload qui prend directement le BlockPos
-                NetworkHooks.openScreen(sender, provider, reopenPos);
+                NetworkHooks.openScreen(
+                        sender,
+                        new MenuProvider() {
+                            @Override
+                            public Component getDisplayName() {
+                                return Component.translatable("screen.medievalcoins.banker");
+                            }
+
+                            @Override
+                            public AbstractContainerMenu createMenu(int windowId, Inventory inventory, Player player) {
+                                FriendlyByteBuf buf = new FriendlyByteBuf(Unpooled.buffer());
+                                buf.writeBlockPos(reopenPos);
+                                return new BankerGuiMenu(windowId, inventory, buf);
+                            }
+                        },
+                        reopenPos
+                );
+
+
 
                 // 9) Confirmation en chat
                 sender.sendSystemMessage(

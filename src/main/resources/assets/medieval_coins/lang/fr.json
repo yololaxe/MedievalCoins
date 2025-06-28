@@ -1,11 +1,21 @@
 {
-  "item.medieval_coins.bronze_coin" : "Pièce de bronze",
-  "item.medieval_coins.silver_coin" : "Pièce d'argent",
-  "item.medieval_coins.gold_coin" : "Pièce d'or",
-  "item.medieval_coins.purse" : "Bourse",
+  "item.medieval_coins.bronze_coin": "Pièce de bronze",
+  "item.medieval_coins.silver_coin": "Pièce d'argent",
+  "item.medieval_coins.gold_coin": "Pièce d'or",
+  "item.medieval_coins.purse": "Bourse",
   "container.purse": "Bourse",
   "itemGroup.medieval_coins": "Pièces médiévales",
   "entity.medieval_coins.banker": "Banquier",
-  "item.medieval_coins.banker_spawn_egg": "Oeuf de banquier"
+  "item.medieval_coins.banker_spawn_egg": "Oeuf de banquier",
 
+  "gui.medieval_coins.banker_gui.button_change_money": "Changer l'argent",
+  "gui.medieval_coins.banker_gui.button_withdraw_money": "Retirer de l'argent",
+  "gui.medieval_coins.banker_gui.button_deposit_money": "Déposer de l'argent",
+
+  "gui.medieval_coins.banker_gui.label_12_bronze_1208": "+12 Bronze 12/08",
+  "gui.medieval_coins.banker_gui.label_empty": "-1 Argent 11/08",
+  "gui.medieval_coins.banker_gui.label_1234": "1234",
+  "gui.medieval_coins.banker_gui.label_2": "Argent",
+  "gui.medieval_coins.banker_gui.label_3": "Bronze",
+  "gui.medieval_coins.banker_gui.label_4": "Fer"
 }
