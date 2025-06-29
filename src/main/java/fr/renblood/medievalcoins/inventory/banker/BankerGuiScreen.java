@@ -43,8 +43,8 @@ public class BankerGuiScreen extends AbstractContainerScreen<BankerGuiMenu> {
 		this.y      = container.y;
 		this.z      = container.z;
 		this.entity = container.entity;
-		this.imageWidth  = 200;
-		this.imageHeight = 180;
+		this.imageWidth  = 226;
+		this.imageHeight = 216;
 	}
 
 	@Override
@@ -53,19 +53,19 @@ public class BankerGuiScreen extends AbstractContainerScreen<BankerGuiMenu> {
 
 		MedievalCoin.PACKET_HANDLER.sendToServer(new BankerGuiRefreshMessage());
 
-		btnDeposit = new ImageButton(this.leftPos + 5, this.topPos + 8, 32, 32, 0, 0, 32,
+		btnDeposit = new ImageButton(this.leftPos + 28, this.topPos + 31, 32, 32, 0, 0, 32,
 				new ResourceLocation("medieval_coins:textures/screens/atlas/imagebutton_deposit.png"),
 				32, 64, e -> MedievalCoin.PACKET_HANDLER.sendToServer(new OpenDepositGuiMessage(x, y, z)));
 		guistate.put("button:imagebutton_deposit", btnDeposit);
 		addRenderableWidget(btnDeposit);
 
-		btnChange = new ImageButton(this.leftPos + 52, this.topPos + 27, 32, 32, 0, 0, 32,
+		btnChange = new ImageButton(this.leftPos + 75, this.topPos + 51, 32, 32, 0, 0, 32,
 				new ResourceLocation("medieval_coins:textures/screens/atlas/imagebutton_wholepurse.png"),
 				32, 64, e -> MedievalCoin.PACKET_HANDLER.sendToServer(new BankerGuiButtonMessage(0, x, y, z)));
 		guistate.put("button:imagebutton_wholepurse", btnChange);
 		addRenderableWidget(btnChange);
 
-		btnWithdraw = new ImageButton(this.leftPos + 5, this.topPos + 47, 32, 32, 0, 0, 32,
+		btnWithdraw = new ImageButton(this.leftPos + 28, this.topPos + 71, 32, 32, 0, 0, 32,
 				new ResourceLocation("medieval_coins:textures/screens/atlas/imagebutton_withdraw.png"),
 				32, 64, e -> {});
 		guistate.put("button:imagebutton_withdraw", btnWithdraw);
@@ -79,10 +79,10 @@ public class BankerGuiScreen extends AbstractContainerScreen<BankerGuiMenu> {
 		RenderSystem.defaultBlendFunc();
 		gg.blit(TEXTURE, this.leftPos, this.topPos, 0, 0, this.imageWidth, this.imageHeight, this.imageWidth, this.imageHeight);
 
-		gg.blit(new ResourceLocation("medieval_coins:textures/item/gold_coin.png"),   this.leftPos + 119,  this.topPos + 20, 0, 0, 16, 16, 16, 16);
-		gg.blit(new ResourceLocation("medieval_coins:textures/item/silver_coin.png"),  this.leftPos + 158,  this.topPos + 20, 0, 0, 16, 16, 16, 16);
-		gg.blit(new ResourceLocation("medieval_coins:textures/item/bronze_coin.png"),  this.leftPos + 119, this.topPos + 49, 0, 0, 16, 16, 16, 16);
-		gg.blit(new ResourceLocation("medieval_coins:textures/item/iron_coin.png"),  this.leftPos + 158,  this.topPos + 49, 0, 0, 16, 16, 16, 16);
+		gg.blit(new ResourceLocation("medieval_coins:textures/item/gold_coin.png"),   this.leftPos + 140,  this.topPos + 44, 0, 0, 16, 16, 16, 16);
+		gg.blit(new ResourceLocation("medieval_coins:textures/item/silver_coin.png"),  this.leftPos + 179,  this.topPos + 44, 0, 0, 16, 16, 16, 16);
+		gg.blit(new ResourceLocation("medieval_coins:textures/item/bronze_coin.png"),  this.leftPos + 140, this.topPos + 73, 0, 0, 16, 16, 16, 16);
+		gg.blit(new ResourceLocation("medieval_coins:textures/item/iron_coin.png"),  this.leftPos + 179,  this.topPos + 73, 0, 0, 16, 16, 16, 16);
 		RenderSystem.disableBlend();
 	}
 
@@ -99,10 +99,10 @@ public class BankerGuiScreen extends AbstractContainerScreen<BankerGuiMenu> {
 	@Override
 	protected void renderLabels(GuiGraphics gg, int mx, int my) {
 		// Affiche chaque valeur à côté de son icône
-		gg.drawString(this.font, goldValue,   104, 23, 0xFF000000, false); // 🟡
-		gg.drawString(this.font, silverValue, 145, 23, 0xFF000000, false); // ⚪
-		gg.drawString(this.font, bronzeValue, 104, 52, 0xFF000000, false); // 🟠
-		gg.drawString(this.font, ironValue,   145, 52, 0xFF000000, false); // ⚫
+		gg.drawString(this.font, goldValue,   122, 49, 0xFF000000, false); // 🟡
+		gg.drawString(this.font, silverValue, 163, 49, 0xFF000000, false); // ⚪
+		gg.drawString(this.font, bronzeValue, 122, 78, 0xFF000000, false); // 🟠
+		gg.drawString(this.font, ironValue,   163, 78, 0xFF000000, false); // ⚫
 
 		// Labels supplémentaires (si utiles)
 		// gg.drawString(this.font, Component.translatable("..."), x, y, color, false);

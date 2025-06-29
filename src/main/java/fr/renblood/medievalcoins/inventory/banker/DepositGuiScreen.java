@@ -18,15 +18,15 @@ public class DepositGuiScreen extends AbstractContainerScreen<DepositGuiMenu> {
     public DepositGuiScreen(DepositGuiMenu menu, Inventory inv, Component title) {
         super(menu, inv, title);
         // calcul standard : 166px pour les slots dépôt + 82px pour l’inventaire joueur
-        this.imageWidth  = 176;
-        this.imageHeight = 166 + 82;
+        this.imageWidth  = 226;
+        this.imageHeight = 216;
     }
 
     @Override
     protected void renderBg(GuiGraphics gg, float pt, int mx, int my) {
         RenderSystem.setShaderColor(1,1,1,1);
         RenderSystem.enableBlend();
-        gg.blit(TEXTURE, this.leftPos, this.topPos, 0, 0, imageWidth, imageHeight);
+        gg.blit(TEXTURE, this.leftPos, this.topPos, 0, 0, imageWidth, imageHeight, this.imageWidth, this.imageHeight);
         RenderSystem.disableBlend();
     }
 
@@ -38,34 +38,26 @@ public class DepositGuiScreen extends AbstractContainerScreen<DepositGuiMenu> {
 
     @Override
     protected void renderLabels(GuiGraphics gg, int mx, int my) {
-        // Titre centré
         String s = this.title.getString();
-        gg.drawString(font, s, (imageWidth - font.width(s)) / 2, 6, 0x404040, false);
-        // label inventaire
-        gg.drawString(font,
-                Component.translatable("container.inventory").getString(),
-                8, imageHeight - 96 + 2, 0x404040, false);
+        gg.drawString(font, s, (imageWidth - font.width(s)) / 2, 12, 0x404040, false); // ↓ abaissé
+
     }
     @Override
     public void init() {
         super.init();
-
-        // bouton “Submit”
         this.addRenderableWidget(Button.builder(
                         Component.translatable("gui.medieval_coins.banker_gui.deposit_submit"),
                         btn -> {
                             var inv = menu.getDepositInv();
-                            // envoi du paquet au serveur
                             MedievalCoin.PACKET_HANDLER.sendToServer(new SubmitDepositMessage(
-
                                     menu.getPos(),
-                                    inv.getItem(0),  // slot fer
-                                    inv.getItem(1),  // slot bronze
-                                    inv.getItem(2),  // slot argent
-                                    inv.getItem(3)   // slot or
+                                    inv.getItem(0),
+                                    inv.getItem(1),
+                                    inv.getItem(2),
+                                    inv.getItem(3)
                             ));
                         })
-                .bounds(leftPos + imageWidth - 70, topPos + imageHeight - 20, 60, 20)
+                .bounds(leftPos + 190, topPos + 81, 60, 20) // ⬅️ bouton placé à gauche
                 .build()
         );
     }

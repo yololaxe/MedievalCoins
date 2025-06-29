@@ -11,6 +11,8 @@
   "gui.medieval_coins.banker_gui.button_change_money": "Changer l'argent",
   "gui.medieval_coins.banker_gui.button_withdraw_money": "Retirer de l'argent",
   "gui.medieval_coins.banker_gui.button_deposit_money": "Déposer de l'argent",
+  "gui.medieval_coins.banker_gui.deposit_submit": "Valider",
+  "gui.medieval_coins.banker_gui.deposit_title": "Déposer vos pièces",
 
   "gui.medieval_coins.banker_gui.label_12_bronze_1208": "+12 Bronze 12/08",
   "gui.medieval_coins.banker_gui.label_empty": "-1 Argent 11/08",

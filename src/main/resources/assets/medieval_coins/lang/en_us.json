@@ -11,6 +11,8 @@
   "gui.medieval_coins.banker_gui.button_change_money": "Change money",
   "gui.medieval_coins.banker_gui.button_withdraw_money": "Withdraw money",
   "gui.medieval_coins.banker_gui.button_deposit_money": "Deposit money",
+  "gui.medieval_coins.banker_gui.deposit_submit": "Submit",
+  "gui.medieval_coins.banker_gui.deposit_title": "Deposit your coins",
 
   "gui.medieval_coins.banker_gui.label_12_bronze_1208": "+12 Bronze 12/08",
   "gui.medieval_coins.banker_gui.label_empty": "-1 Silver 11/08",

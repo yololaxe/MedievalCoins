@@ -50,7 +50,7 @@ public class OpenDepositGuiMessage {
                     (windowId, playerInv, dataBuf) ->
                             new DepositGuiMenu(windowId, playerInv, pos, windowId),
                     // titre de la fenêtre
-                    Component.translatable("gui.medieval_coins.banker_gui.deposit_title")
+                    Component.empty()     //Component.translatable("gui.medieval_coins.banker_gui.deposit_title")
             );
 
             // 2) Ouverture du GUI côté serveur :

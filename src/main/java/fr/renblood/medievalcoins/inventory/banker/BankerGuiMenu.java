@@ -37,17 +37,22 @@ public class BankerGuiMenu extends AbstractContainerMenu implements Supplier<Map
 		this.access = ContainerLevelAccess.create(world, pos);
 
 		// ✅ Ajout de l’inventaire du joueur (3x9)
-		int invX = 8, invY = 84;
+		// 📐 Placement de l'inventaire joueur (3 lignes + hotbar)
+		int baseX = 25 + 8;
+		int baseY = 25 + 84;
+
+// Lignes d'inventaire (3x9)
 		for (int row = 0; row < 3; ++row) {
 			for (int col = 0; col < 9; ++col) {
-				this.addSlot(new Slot(inv, col + row * 9 + 9, invX + col * 18, invY + row * 18));
+				this.addSlot(new Slot(inv, col + row * 9 + 9, baseX + col * 18, baseY + row * 18));
 			}
 		}
 
-		// ✅ Ajout de la hotbar (1x9)
+// Hotbar (1x9)
 		for (int col = 0; col < 9; ++col) {
-			this.addSlot(new Slot(inv, col, invX + col * 18, invY + 58));
+			this.addSlot(new Slot(inv, col, baseX + col * 18, baseY + 58));
 		}
+
 	}
 
 	@Override
