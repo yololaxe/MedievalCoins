@@ -6,6 +6,7 @@ import fr.renblood.medievalcoins.MedievalCoin;
 import fr.renblood.medievalcoins.network.BankerGuiRefreshMessage;
 import fr.renblood.medievalcoins.network.BankerGuiButtonMessage;
 import fr.renblood.medievalcoins.procedures.OpenDepositGuiMessage;
+import fr.renblood.medievalcoins.procedures.OpenWithdrawGuiMessage;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.ImageButton;
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
@@ -67,7 +68,7 @@ public class BankerGuiScreen extends AbstractContainerScreen<BankerGuiMenu> {
 
 		btnWithdraw = new ImageButton(this.leftPos + 28, this.topPos + 71, 32, 32, 0, 0, 32,
 				new ResourceLocation("medieval_coins:textures/screens/atlas/imagebutton_withdraw.png"),
-				32, 64, e -> {});
+				32, 64, e -> MedievalCoin.PACKET_HANDLER.sendToServer(new OpenWithdrawGuiMessage(x, y, z)));
 		guistate.put("button:imagebutton_withdraw", btnWithdraw);
 		addRenderableWidget(btnWithdraw);
 	}

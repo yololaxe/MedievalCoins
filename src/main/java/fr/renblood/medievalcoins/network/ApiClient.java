@@ -117,4 +117,42 @@ public class ApiClient {
 
         return resp.get("new_balance").getAsInt();
     }
+    public static int withdraw(String playerId, int coinType, int amount) throws Exception {
+        ModConfig cfg = ModConfig.load();
+        if (cfg.apiKey == null || cfg.apiKey.isEmpty()) {
+            throw new IllegalStateException("API key non configurée");
+        }
+
+        String endpoint = cfg.apiUrl + "/players/withdraw/" + playerId + "/";
+        URL url = new URL(endpoint);
+        HttpURLConnection conn = (HttpURLConnection) url.openConnection();
+        conn.setRequestMethod("POST");
+        conn.setRequestProperty("Authorization", "Bearer " + cfg.apiKey);
+        conn.setRequestProperty("Content-Type", "application/json");
+        conn.setDoOutput(true);
+        conn.setConnectTimeout(3000);
+        conn.setReadTimeout(3000);
+
+        // Corps JSON : { "coin_type": 1, "amount": 10 }
+        JsonObject body = new JsonObject();
+        body.addProperty("coin_type", coinType);
+        body.addProperty("amount", amount);
+
+        try (OutputStream os = conn.getOutputStream()) {
+            os.write(GSON.toJson(body).getBytes());
+            os.flush();
+        }
+
+        int code = conn.getResponseCode();
+        if (code < 200 || code >= 300) {
+            throw new RuntimeException("Erreur HTTP " + code + " sur " + endpoint);
+        }
+
+        try (var reader = new InputStreamReader(conn.getInputStream())) {
+            JsonObject resp = GSON.fromJson(reader, JsonObject.class);
+            return resp.get("new_balance").getAsInt();
+        } finally {
+            conn.disconnect();
+        }
+    }
 }

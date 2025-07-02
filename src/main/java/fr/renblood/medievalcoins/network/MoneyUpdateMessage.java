@@ -1,7 +1,7 @@
-// src/main/java/fr/renblood/medievalcoins/network/MoneyUpdateMessage.java
-
 package fr.renblood.medievalcoins.network;
 
+import fr.renblood.medievalcoins.inventory.banker.BankerGuiScreen;
+import fr.renblood.medievalcoins.inventory.banker.WithdrawGuiScreen;
 import net.minecraft.client.Minecraft;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraftforge.network.NetworkEvent;
@@ -13,7 +13,7 @@ public class MoneyUpdateMessage {
     public final double newMoney;
 
     public MoneyUpdateMessage(String mcId, double newMoney) {
-        this.mcId    = mcId;
+        this.mcId     = mcId;
         this.newMoney = newMoney;
     }
 
@@ -29,12 +29,13 @@ public class MoneyUpdateMessage {
     }
 
     public static void handle(MoneyUpdateMessage msg, Supplier<NetworkEvent.Context> ctx) {
-        // *** côté client uniquement ***
         ctx.get().enqueueWork(() -> {
-            // on doit être sur le fil client
             Minecraft mc = Minecraft.getInstance();
-            if (mc.screen instanceof fr.renblood.medievalcoins.inventory.banker.BankerGuiScreen screen) {
-                screen.updateMoney(msg.newMoney);
+            var screen = mc.screen;
+            if (screen instanceof BankerGuiScreen banker) {
+                banker.updateMoney(msg.newMoney);
+            } else if (screen instanceof WithdrawGuiScreen withdraw) {
+                withdraw.updateMoney(msg.newMoney);
             }
         });
         ctx.get().setPacketHandled(true);

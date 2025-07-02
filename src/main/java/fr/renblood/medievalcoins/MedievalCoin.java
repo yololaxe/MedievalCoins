@@ -6,11 +6,13 @@ import fr.renblood.medievalcoins.init.MedievalCoinsModMenus;
 import fr.renblood.medievalcoins.inventory.banker.BankerGuiScreen;
 import fr.renblood.medievalcoins.inventory.banker.ChangeGUIScreen;
 import fr.renblood.medievalcoins.inventory.banker.DepositGuiScreen;
+import fr.renblood.medievalcoins.inventory.banker.WithdrawGuiScreen;
 import fr.renblood.medievalcoins.inventory.purse.PurseScreen;
 import fr.renblood.medievalcoins.item.Coins;
 import fr.renblood.medievalcoins.network.*;
 import fr.renblood.medievalcoins.procedures.OpenDepositGuiMessage;
 
+import fr.renblood.medievalcoins.procedures.OpenWithdrawGuiMessage;
 import net.minecraft.client.gui.screens.MenuScreens;
 import net.minecraft.client.renderer.entity.EntityRenderers;
 import net.minecraft.network.FriendlyByteBuf;
@@ -80,6 +82,7 @@ public class MedievalCoin {
             MenuScreens.register(MedievalCoinsModMenus.CHANGE_GUI.get(),  ChangeGUIScreen::new);
             MenuScreens.register(MedievalCoinsModMenus.DEPOSIT_MENU.get(), DepositGuiScreen::new);
             MenuScreens.register(MedievalCoinsModMenus.PURSE_CONTAINER.get(), PurseScreen::new);
+            MenuScreens.register(MedievalCoinsModMenus.WITHDRAW_MENU.get(), WithdrawGuiScreen::new);
 
             // 6) Renderer de l'entité banquier
             EntityRenderers.register(BANKER.get(), BankerRenderer::new);
@@ -132,6 +135,28 @@ public class MedievalCoin {
                 BankerGuiButtonMessage::handler,
                 Optional.of(NetworkDirection.PLAY_TO_SERVER)
         );
+// 6) Ouvrir le GUI de retrait
+        PACKET_HANDLER.registerMessage(
+                messageID++,
+                OpenWithdrawGuiMessage.class,
+                OpenWithdrawGuiMessage::encode,
+                OpenWithdrawGuiMessage::decode,
+                OpenWithdrawGuiMessage::handle,
+                Optional.of(NetworkDirection.PLAY_TO_SERVER)
+        );
+
+        // 7) Soumettre retrait
+        PACKET_HANDLER.registerMessage(
+                messageID++,
+                SubmitWithdrawMessage.class,
+                SubmitWithdrawMessage::encode,
+                SubmitWithdrawMessage::decode,
+                SubmitWithdrawMessage::handle,
+                Optional.of(NetworkDirection.PLAY_TO_SERVER)
+        );
+
+
+
     }
 
     // (facultatif) file de tâches côté serveur

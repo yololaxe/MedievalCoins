@@ -5,6 +5,7 @@ import fr.renblood.medievalcoins.MedievalCoin;
 import fr.renblood.medievalcoins.inventory.banker.BankerGuiMenu;
 import fr.renblood.medievalcoins.inventory.banker.ChangeGUIMenu;
 import fr.renblood.medievalcoins.inventory.banker.DepositGuiMenu;
+import fr.renblood.medievalcoins.inventory.banker.WithdrawGuiMenu;
 import fr.renblood.medievalcoins.inventory.purse.PurseContainer;
 
 import net.minecraft.world.inventory.MenuType;
@@ -30,6 +31,10 @@ public class MedievalCoinsModMenus {
 	public static final RegistryObject<MenuType<DepositGuiMenu>> DEPOSIT_MENU =
 			REGISTRY.register("deposit_gui",
 					() -> IForgeMenuType.create(DepositGuiMenu::fromNetwork)
+			);
+	public static final RegistryObject<MenuType<WithdrawGuiMenu>> WITHDRAW_MENU =
+			REGISTRY.register("withdraw_gui",
+					() -> IForgeMenuType.create(WithdrawGuiMenu::fromNetwork)
 			);
 
 	public static final RegistryObject<MenuType<PurseContainer>> PURSE_CONTAINER =
