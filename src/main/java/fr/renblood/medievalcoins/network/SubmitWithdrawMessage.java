@@ -4,25 +4,18 @@ package fr.renblood.medievalcoins.network;
 import fr.renblood.medievalcoins.MedievalCoin;
 import fr.renblood.medievalcoins.client.model.PlayerModel;
 import fr.renblood.medievalcoins.inventory.banker.WithdrawGuiMenu;
-import fr.renblood.medievalcoins.inventory.banker.BankerGuiMenu;
 import fr.renblood.medievalcoins.item.Coins;
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerPlayer;
-import net.minecraft.world.SimpleMenuProvider;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.inventory.AbstractContainerMenu;
+import net.minecraft.world.item.Items;
 import net.minecraftforge.network.NetworkEvent;
-import net.minecraftforge.network.NetworkHooks;
 import net.minecraftforge.network.PacketDistributor;
 
 import java.util.function.Supplier;
-
-import io.netty.buffer.Unpooled;
-
-import static net.minecraft.world.item.Items.IRON_INGOT;
 
 public class SubmitWithdrawMessage {
     private final BlockPos pos;
@@ -54,15 +47,15 @@ public class SubmitWithdrawMessage {
             ServerPlayer sender = ctx.getSender();
             if (sender == null) return;
 
-            // 1) Vérifier que le container est bien WithdrawGuiMenu
+            // 1) On est bien dans le bon menu ?
             if (!(sender.containerMenu instanceof WithdrawGuiMenu)) return;
 
-            // 2) Charger ou récupérer le PlayerModel
-            String mcUuid = sender.getGameProfile().getId().toString();
-            PlayerModel pm = PlayerCache.getPlayer(mcUuid);
+            // 2) Charge ou récupère le PlayerModel
+            String uuid = sender.getGameProfile().getId().toString();
+            PlayerModel pm = PlayerCache.getPlayer(uuid);
             if (pm == null) {
                 try {
-                    pm = ApiClient.getPlayer(mcUuid);
+                    pm = ApiClient.getPlayer(uuid);
                 } catch (Exception e) {
                     MedievalCoin.LOGGER.error("Erreur API getPlayer", e);
                     sender.sendSystemMessage(Component.translatable("chat.medieval_coins.withdraw_error"));
@@ -71,20 +64,21 @@ public class SubmitWithdrawMessage {
                 PlayerCache.updatePlayer(pm);
             }
 
-            // 3) Préparer l’ItemStack à donner
-            ItemStack giveStack = switch (msg.coinType) {
-                case 0 -> new ItemStack(IRON_INGOT, msg.amount);
-                case 1 -> new ItemStack(Coins.BRONZE_COIN.get(), msg.amount);
-                case 2 -> new ItemStack(Coins.SILVER_COIN.get(), msg.amount);
-                case 3 -> new ItemStack(Coins.GOLD_COIN.get(), msg.amount);
-                default -> ItemStack.EMPTY;
-            };
+            // 3) Prépare l’ItemStack à donner
+            ItemStack giveStack;
+            switch (msg.coinType) {
+                case 0 -> giveStack = new ItemStack(Coins.IRON_COIN.get(), msg.amount);
+                case 1 -> giveStack = new ItemStack(Coins.BRONZE_COIN.get(), msg.amount);
+                case 2 -> giveStack = new ItemStack(Coins.SILVER_COIN.get(), msg.amount);
+                case 3 -> giveStack = new ItemStack(Coins.GOLD_COIN.get(), msg.amount);
+                default -> giveStack = ItemStack.EMPTY;
+            }
             if (giveStack.isEmpty()) {
                 sender.sendSystemMessage(Component.translatable("chat.medieval_coins.withdraw_error"));
                 return;
             }
 
-            // 4) Vérifier place dans l’inventaire
+            // 4) Vérifie de la place dans l’inventaire
             Inventory inv = sender.getInventory();
             if (!inv.add(giveStack.copy())) {
                 sender.sendSystemMessage(Component.translatable("chat.medieval_coins.withdraw_no_space"));
@@ -92,43 +86,29 @@ public class SubmitWithdrawMessage {
             }
 
             try {
-                // 5) Appel API pour débiter et récupérer le nouveau solde
+                // 5) Appelle l’API pour débiter et récupérer le nouveau solde
                 int newBalance = ApiClient.withdraw(pm.id_minecraft, msg.coinType, msg.amount);
                 pm.money = newBalance;
                 PlayerCache.updatePlayer(pm);
 
-                // 6) Envoyer la mise à jour du solde au client
+                // 6) Envoie la mise à jour du solde au client
                 MedievalCoin.PACKET_HANDLER.send(
                         PacketDistributor.PLAYER.with(() -> sender),
-                        new MoneyUpdateMessage(mcUuid, newBalance)
+                        new MoneyUpdateMessage(uuid, newBalance)
                 );
 
-                // 7) Réouvrir le GUI banquier à la même position
-                BlockPos reopenPos = msg.pos;
-                NetworkHooks.openScreen(
-                        sender,
-                        new SimpleMenuProvider(
-                                (windowId, playerInv, pl) -> {
-                                    FriendlyByteBuf extra = new FriendlyByteBuf(Unpooled.buffer());
-                                    extra.writeBlockPos(reopenPos);
-                                    return new WithdrawGuiMenu(windowId, playerInv, reopenPos);
-                                },
-                                Component.translatable("screen.medieval_coins.banker")
-                        ),
-                        reopenPos
-                );
-
-                // 8) Confirmation en chat
+                // 7) Confirmation en chat
                 sender.sendSystemMessage(
                         Component.translatable("chat.medieval_coins.withdraw_success", msg.amount)
                 );
 
                 MedievalCoin.LOGGER.info(
-                        "Withdraw {} of type {} for {} succeeded; new balance = {}",
-                        msg.amount, msg.coinType, mcUuid, newBalance
+                        "Withdraw {}×type{} for {} → new balance {}",
+                        msg.amount, msg.coinType, uuid, newBalance
                 );
+
             } catch (Exception e) {
-                MedievalCoin.LOGGER.error("Failed to withdraw for " + mcUuid, e);
+                MedievalCoin.LOGGER.error("Failed to withdraw for " + uuid, e);
                 sender.sendSystemMessage(Component.translatable("chat.medieval_coins.withdraw_error"));
             }
         });

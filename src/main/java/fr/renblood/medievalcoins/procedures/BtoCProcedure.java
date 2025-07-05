@@ -1,5 +1,6 @@
 package fr.renblood.medievalcoins.procedures;
 
+import fr.renblood.medievalcoins.item.Coins;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.inventory.Slot;
@@ -38,7 +39,7 @@ public class BtoCProcedure {
 					_player.containerMenu.broadcastChanges();
 				}
 				if (entity instanceof Player _player && _player.containerMenu instanceof Supplier _current && _current.get() instanceof Map _slots) {
-					ItemStack _setstack = new ItemStack(Items.COPPER_INGOT).copy();
+					ItemStack _setstack = new ItemStack(Coins.IRON_COIN.get()).copy();
 					_setstack.setCount(64);
 					((Slot) _slots.get(9)).set(_setstack);
 					_player.containerMenu.broadcastChanges();

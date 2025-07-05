@@ -115,7 +115,6 @@ public class WithdrawGuiScreen extends AbstractContainerScreen<WithdrawGuiMenu> 
                 MedievalCoin.PACKET_HANDLER.sendToServer(
                         new SubmitWithdrawMessage(pos, type, amount)
                 );
-                minecraft.player.closeContainer();
                 return true;
             }
         }

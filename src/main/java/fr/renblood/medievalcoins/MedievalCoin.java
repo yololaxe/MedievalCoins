@@ -2,6 +2,9 @@
 package fr.renblood.medievalcoins;
 
 import fr.renblood.medievalcoins.client.renderer.BankerRenderer;
+import fr.renblood.medievalcoins.creative.CreativeTab;
+import fr.renblood.medievalcoins.init.BlockInit;
+import fr.renblood.medievalcoins.init.ItemInit;
 import fr.renblood.medievalcoins.init.MedievalCoinsModMenus;
 import fr.renblood.medievalcoins.inventory.banker.BankerGuiScreen;
 import fr.renblood.medievalcoins.inventory.banker.ChangeGUIScreen;
@@ -15,10 +18,7 @@ import fr.renblood.medievalcoins.procedures.OpenDepositGuiMessage;
 import fr.renblood.medievalcoins.procedures.OpenWithdrawGuiMessage;
 import net.minecraft.client.gui.screens.MenuScreens;
 import net.minecraft.client.renderer.entity.EntityRenderers;
-import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.resources.ResourceLocation;
-import net.minecraft.world.inventory.MenuType;
-import net.minecraft.world.item.ItemStack;
 
 import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.event.TickEvent;
@@ -26,20 +26,15 @@ import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.fml.event.lifecycle.FMLCommonSetupEvent;
 import net.minecraftforge.fml.javafmlmod.FMLJavaModLoadingContext;
-import net.minecraftforge.fml.util.thread.SidedThreadGroups;
 import net.minecraftforge.network.NetworkDirection;
 import net.minecraftforge.network.NetworkRegistry;
 import net.minecraftforge.network.simple.SimpleChannel;
-import net.minecraftforge.registries.ForgeRegistries;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import java.util.*;
 import java.util.concurrent.ConcurrentLinkedQueue;
-import java.util.function.BiConsumer;
-import java.util.function.Function;
-import java.util.function.Supplier;
 
 import static fr.renblood.medievalcoins.init.EntityInit.BANKER;
 import static fr.renblood.medievalcoins.init.EntityInit.ENTITY_TYPES;
@@ -64,6 +59,9 @@ public class MedievalCoin {
 
         // 2) Enregistrement des DeferredRegister (items, entités, menus…)
         Coins.register(modBus);
+        ItemInit.REGISTRY.register(modBus);
+        BlockInit.REGISTRY.register(modBus);
+        CreativeTab.TABS.register(modBus);
         ENTITY_TYPES.register(modBus);
         MedievalCoinsModMenus.REGISTRY.register(modBus);
         modBus.addListener(this::commonSetup);
@@ -135,7 +133,18 @@ public class MedievalCoin {
                 BankerGuiButtonMessage::handler,
                 Optional.of(NetworkDirection.PLAY_TO_SERVER)
         );
-// 6) Ouvrir le GUI de retrait
+
+        // 6) **Changer de GUI** (tu oubliais celui‐ci)
+        PACKET_HANDLER.registerMessage(
+                messageID++,
+                ChangeGUIButtonMessage.class,
+                ChangeGUIButtonMessage::buffer,   // ← au lieu de ::encode
+                ChangeGUIButtonMessage::new,      // ← au lieu de ::decode
+                ChangeGUIButtonMessage::handler,
+                Optional.of(NetworkDirection.PLAY_TO_SERVER)
+        );
+
+        // 7) Ouvrir le GUI de retrait
         PACKET_HANDLER.registerMessage(
                 messageID++,
                 OpenWithdrawGuiMessage.class,
@@ -145,7 +154,7 @@ public class MedievalCoin {
                 Optional.of(NetworkDirection.PLAY_TO_SERVER)
         );
 
-        // 7) Soumettre retrait
+        // 8) Soumettre retrait
         PACKET_HANDLER.registerMessage(
                 messageID++,
                 SubmitWithdrawMessage.class,
@@ -154,10 +163,8 @@ public class MedievalCoin {
                 SubmitWithdrawMessage::handle,
                 Optional.of(NetworkDirection.PLAY_TO_SERVER)
         );
-
-
-
     }
+
 
     // (facultatif) file de tâches côté serveur
     private static final Collection<Map.Entry<Runnable,Integer>> workQueue = new ConcurrentLinkedQueue<>();

@@ -1,6 +1,7 @@
 package fr.renblood.medievalcoins.item;
 
 import fr.renblood.medievalcoins.MedievalCoin;
+import fr.renblood.medievalcoins.creative.CreativeTab;
 import fr.renblood.medievalcoins.init.EntityInit;
 import net.minecraft.world.item.Item;
 import net.minecraftforge.common.ForgeSpawnEggItem;
@@ -20,14 +21,15 @@ public class Coins {
 //            () -> new Purse(new Item.Properties().stacksTo(1))));
 //public static final RegistryObject<ForgeSpawnEggItem> BANKER_SPAWN__EGG = addToTab(ITEMS.register("banker_spawn_egg",
 //        () -> new ForgeSpawnEggItem(EntityInit.BANKER, 0xF0ABD1, 0xAE4C82, new Item.Properties() )));
-public static final RegistryObject<Item> BRONZE_COIN = ITEMS.register("bronze_coin", () -> new Item(new Item.Properties()));
-    public static final RegistryObject<Item> SILVER_COIN = ITEMS.register("silver_coin", () -> new Item(new Item.Properties()));
-    public static final RegistryObject<Item> GOLD_COIN = ITEMS.register("gold_coin", () -> new Item(new Item.Properties()));
-    public static final RegistryObject<Item> PURSE = ITEMS.register("purse",
-            () -> new Purse(new Item.Properties().stacksTo(1)));
+    public static final RegistryObject<Item> IRON_COIN = CreativeTab.addToTab(ITEMS.register("iron_coin", () -> new Item(new Item.Properties())));
+    public static final RegistryObject<Item> BRONZE_COIN = CreativeTab.addToTab(ITEMS.register("bronze_coin", () -> new Item(new Item.Properties())));
+    public static final RegistryObject<Item> SILVER_COIN = CreativeTab.addToTab(ITEMS.register("silver_coin", () -> new Item(new Item.Properties())));
+    public static final RegistryObject<Item> GOLD_COIN = CreativeTab.addToTab(ITEMS.register("gold_coin", () -> new Item(new Item.Properties())));
+    public static final RegistryObject<Item> PURSE = CreativeTab.addToTab(ITEMS.register("purse",
+            () -> new Purse(new Item.Properties().stacksTo(1))));
 
-    public static final RegistryObject<ForgeSpawnEggItem> BANKER_SPAWN__EGG = ITEMS.register("banker_spawn_egg",
-            () -> new ForgeSpawnEggItem(EntityInit.BANKER, 0xF0ABD1, 0xAE4C82, new Item.Properties() ));
+    public static final RegistryObject<ForgeSpawnEggItem> BANKER_SPAWN__EGG = CreativeTab.addToTab(ITEMS.register("banker_spawn_egg",
+            () -> new ForgeSpawnEggItem(EntityInit.BANKER, 0xF0ABD1, 0xAE4C82, new Item.Properties() )));
 
 
     public static void register(IEventBus eventBus){

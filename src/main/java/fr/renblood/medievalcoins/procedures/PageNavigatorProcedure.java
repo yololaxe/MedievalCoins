@@ -1,9 +1,8 @@
+// src/main/java/fr/renblood/medievalcoins/procedures/PageNavigatorProcedure.java
 package fr.renblood.medievalcoins.procedures;
 
 import fr.renblood.medievalcoins.inventory.banker.ChangeGUIMenu;
-import io.netty.buffer.Unpooled;
 import net.minecraft.core.BlockPos;
-import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.MenuProvider;
@@ -16,13 +15,17 @@ import net.minecraftforge.network.NetworkHooks;
 
 public class PageNavigatorProcedure {
 	public static void execute(LevelAccessor world, double x, double y, double z, Entity entity) {
-		if (entity == null)
-			return;
-		if (entity instanceof Player _player)
-			_player.closeContainer();
-		if (entity instanceof ServerPlayer _ent) {
-			BlockPos _bpos = BlockPos.containing(x, y, z);
-			NetworkHooks.openScreen((ServerPlayer) _ent, new MenuProvider() {
+		if (entity == null) return;
+
+		// Ferme d'abord l'ancien container côté client
+		if (entity instanceof Player player) {
+			player.closeContainer();
+		}
+
+		// Puis rouvre le ChangeGUI côté serveur
+		if (entity instanceof ServerPlayer serverPlayer) {
+			BlockPos pos = BlockPos.containing(x, y, z);
+			NetworkHooks.openScreen(serverPlayer, new MenuProvider() {
 				@Override
 				public Component getDisplayName() {
 					return Component.literal("ChangeGUI");
@@ -30,9 +33,10 @@ public class PageNavigatorProcedure {
 
 				@Override
 				public AbstractContainerMenu createMenu(int id, Inventory inventory, Player player) {
-					return new ChangeGUIMenu(id, inventory, new FriendlyByteBuf(Unpooled.buffer()).writeBlockPos(_bpos));
+					// ici on passe directement le BlockPos
+					return new ChangeGUIMenu(id, inventory, pos);
 				}
-			}, _bpos);
+			}, pos);
 		}
 	}
 }

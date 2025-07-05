@@ -41,9 +41,9 @@ public class WithdrawGuiMenu extends AbstractContainerMenu implements Supplier<M
 
         // 12 slots for withdraw options
         this.internal = new ItemStackHandler(12);
-        internal.setStackInSlot(0, new ItemStack(Items.IRON_INGOT, 1));
-        internal.setStackInSlot(1, new ItemStack(Items.IRON_INGOT, 10));
-        internal.setStackInSlot(2, new ItemStack(Items.IRON_INGOT, 32));
+        internal.setStackInSlot(0, new ItemStack(Coins.IRON_COIN.get(), 1));
+        internal.setStackInSlot(1, new ItemStack(Coins.IRON_COIN.get(), 10));
+        internal.setStackInSlot(2, new ItemStack(Coins.IRON_COIN.get(), 32));
         internal.setStackInSlot(3, new ItemStack(Coins.BRONZE_COIN.get(), 1));
         internal.setStackInSlot(4, new ItemStack(Coins.BRONZE_COIN.get(), 10));
         internal.setStackInSlot(5, new ItemStack(Coins.BRONZE_COIN.get(), 32));

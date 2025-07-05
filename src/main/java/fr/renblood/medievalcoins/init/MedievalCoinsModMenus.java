@@ -25,7 +25,7 @@ public class MedievalCoinsModMenus {
 
 	public static final RegistryObject<MenuType<ChangeGUIMenu>> CHANGE_GUI =
 			REGISTRY.register("change_gui",
-					() -> IForgeMenuType.create(ChangeGUIMenu::new)
+					() -> IForgeMenuType.create(ChangeGUIMenu::fromNetwork)
 			);
 
 	public static final RegistryObject<MenuType<DepositGuiMenu>> DEPOSIT_MENU =

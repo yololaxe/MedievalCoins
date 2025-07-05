@@ -33,6 +33,7 @@ public class PurseContainer extends AbstractContainerMenu {
         allowedItems.add(Coins.GOLD_COIN.get());
         allowedItems.add(Coins.SILVER_COIN.get());
         allowedItems.add(Coins.BRONZE_COIN.get());
+        allowedItems.add(Coins.IRON_COIN.get());
 
         // Slots du Purse en 3x3
         int startX = 62; // Position horizontale initiale pour centrer la grille
@@ -95,7 +96,7 @@ public class PurseContainer extends AbstractContainerMenu {
             } else {
                 // Si l'objet est une pièce et que l'objet est dans l'inventaire du joueur, le déplacer dans la Purse
                 if (stackInSlot.getItem() == Coins.GOLD_COIN.get() ||
-                        stackInSlot.getItem() == Coins.SILVER_COIN.get() ||
+                        stackInSlot.getItem() == Coins.SILVER_COIN.get() || stackInSlot.getItem() == Coins.IRON_COIN.get() ||
                         stackInSlot.getItem() == Coins.BRONZE_COIN.get()) {
 
                     if (!this.moveItemStackTo(stackInSlot, 0, 9, false)) {
