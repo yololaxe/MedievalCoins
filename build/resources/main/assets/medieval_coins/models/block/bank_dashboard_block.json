@@ -1,0 +1,51 @@
+{
+	"parent": "forge:block/default",
+	"textures": {
+		"0": "medieval_coins:block/bankdash_board",
+		"particle": "medieval_coins:block/bankdash_board"
+	},
+	"elements": [
+		{
+			"name": "bone",
+			"from": [0, 0, 0],
+			"to": [16, 2, 16],
+			"rotation": {"angle": 0, "axis": "y", "origin": [8, 0, 8]},
+			"faces": {
+				"north": {"uv": [0, 8, 4, 8.5], "texture": "#0"},
+				"east":  {"uv": [0, 8.5, 3.75, 9], "texture": "#0"},
+				"south": {"uv": [0, 9.5, 4, 10], "texture": "#0"},
+				"west":  {"uv": [0, 9, 3.75, 9.5], "texture": "#0"},
+				"up":    {"uv": [4, 4, 0, 0], "texture": "#0"},
+				"down":  {"uv": [4, 4, 0, 8], "texture": "#0"}
+			}
+		},
+		{
+			"name": "bone",
+			"from": [4, 2, 4],
+			"to": [12, 15, 12],
+			"rotation": {"angle": 0, "axis": "y", "origin": [8, 0, 8]},
+			"faces": {
+				"north": {"uv": [4, 6.5, 6, 9.75], "texture": "#0"},
+				"east":  {"uv": [6, 10, 8, 13],    "texture": "#0"},
+				"south": {"uv": [4, 10, 6, 13],    "texture": "#0"},
+				"west":  {"uv": [6, 6.5, 8, 10],   "texture": "#0"},
+				"up":    {"uv": [8, 3.25, 4, 0],   "texture": "#0"},
+				"down":  {"uv": [8, 3.25, 4, 6.5], "texture": "#0"}
+			}
+		},
+		{
+			"name": "bone",
+			"from": [0.0125, 12, 3],
+			"to": [15.9875, 16, 16],
+			"rotation": {"angle": -22.5, "axis": "x", "origin": [8, 8, 8]},
+			"faces": {
+				"north": {"uv": [8, 0, 12, 1],    "texture": "#0"},
+				"east":  {"uv": [8, 2, 11.25, 3], "texture": "#0"},
+				"south": {"uv": [8, 1, 12, 2],    "texture": "#0"},
+				"west":  {"uv": [8, 3, 11.25, 4], "texture": "#0"},
+				"up":    {"uv": [8, 3.25, 4, 0],  "texture": "#0"},
+				"down":  {"uv": [8, 3.25, 4, 6.5],"texture": "#0"}
+			}
+		}
+	]
+}

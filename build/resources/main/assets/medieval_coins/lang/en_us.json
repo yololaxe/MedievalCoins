@@ -17,18 +17,23 @@
 
   "gui.medieval_coins.withdraw_gui.title": "Withdraw your coins",
 
+  "screen.medieval_coins.banker": "Banker GUI",
+  "screen.medieval_coins.withdraw": "Withdraw GUI",
+  "screen.medievalcoins.banker": "Banker GUI",
+
   "chat.medieval_coins.withdraw_insufficient": "Insufficient funds",
   "chat.medieval_coins.withdraw_no_space": "Not enough inventory space",
   "chat.medieval_coins.withdraw_success": "Withdrawn %s piece(s) successfully",
   "chat.medieval_coins.withdraw_error": "Error during withdrawal",
 
-  "screen.medieval_coins.banker": "Banker GUI",
-  "screen.medieval_coins.withdraw": "Withdraw GUI",
+  "chat.medieval_coins.deposit_success": "Deposited %s copper successfully",
 
   "gui.medieval_coins.banker_gui.label_12_bronze_1208": "+12 Bronze 12/08",
   "gui.medieval_coins.banker_gui.label_empty": "-1 Silver 11/08",
   "gui.medieval_coins.banker_gui.label_1234": "1234",
   "gui.medieval_coins.banker_gui.label_2": "Silver",
   "gui.medieval_coins.banker_gui.label_3": "Bronze",
-  "gui.medieval_coins.banker_gui.label_4": "Iron"
+  "gui.medieval_coins.banker_gui.label_4": "Iron",
+
+  "block.medieval_coins.bank_dashboard": "Bank Dashboard"
 }
