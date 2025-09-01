@@ -17,18 +17,23 @@
 
   "gui.medieval_coins.withdraw_gui.title": "Retirer vos pièces",
 
+  "screen.medieval_coins.banker": "GUI du Banquier",
+  "screen.medieval_coins.withdraw": "GUI de Retrait",
+  "screen.medievalcoins.banker": "GUI du Banquier",
+
   "chat.medieval_coins.withdraw_insufficient": "Vous n'avez pas assez d'argent",
   "chat.medieval_coins.withdraw_no_space": "Pas assez de place dans l'inventaire",
   "chat.medieval_coins.withdraw_success": "Retrait de %s pièce(s) réussi",
   "chat.medieval_coins.withdraw_error": "Erreur lors du retrait",
 
-  "screen.medieval_coins.banker": "GUI du Banquier",
-  "screen.medieval_coins.withdraw": "GUI de Retrait",
+  "chat.medieval_coins.deposit_success": "Dépôt de %s unités de cuivre réussi",
 
   "gui.medieval_coins.banker_gui.label_12_bronze_1208": "+12 Bronze 12/08",
   "gui.medieval_coins.banker_gui.label_empty": "-1 Argent 11/08",
   "gui.medieval_coins.banker_gui.label_1234": "1234",
   "gui.medieval_coins.banker_gui.label_2": "Argent",
   "gui.medieval_coins.banker_gui.label_3": "Bronze",
-  "gui.medieval_coins.banker_gui.label_4": "Fer"
+  "gui.medieval_coins.banker_gui.label_4": "Fer",
+
+  "block.medieval_coins.bank_dashboard": "Tableau de bord bancaire"
 }

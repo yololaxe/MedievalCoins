@@ -1,7 +1,8 @@
 {
   "variants": {
-    "": {
-      "model": "medieval_coins:block/bank_dashboard"
-    }
+    "facing=north": { "model": "medieval_coins:block/bank_dashboard_block", "y": 0 },
+    "facing=south": { "model": "medieval_coins:block/bank_dashboard_block", "y": 180   },
+    "facing=west":  { "model": "medieval_coins:block/bank_dashboard_block", "y": 270  },
+    "facing=east":  { "model": "medieval_coins:block/bank_dashboard_block", "y": 90 }
   }
 }

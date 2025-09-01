@@ -6,7 +6,9 @@ import fr.renblood.medievalcoins.inventory.RestrictedSlotItemHandler;
 import fr.renblood.medievalcoins.item.Coins;
 import fr.renblood.medievalcoins.procedures.ChangeGUIClosedProcedure;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.Direction;
 import net.minecraft.network.FriendlyByteBuf;
+import net.minecraft.world.entity.item.ItemEntity;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.inventory.AbstractContainerMenu;
@@ -110,14 +112,95 @@ public class ChangeGUIMenu extends AbstractContainerMenu implements Supplier<Map
 		return AbstractContainerMenu.stillValid(access, player, world.getBlockState(pos).getBlock());
 	}
 
-	@Override public ItemStack quickMoveStack(Player p, int idx) {
-		return ItemStack.EMPTY;
+	@Override
+	public ItemStack quickMoveStack(Player player, int index) {
+		ItemStack original = ItemStack.EMPTY;
+		Slot slot = this.slots.get(index);
+		if (slot == null || !slot.hasItem()) return original;
+
+		ItemStack stackInSlot = slot.getItem();
+		original = stackInSlot.copy();
+
+		// bornes
+		int CUSTOM_START = 0, CUSTOM_END = 12;      // slots custom 0..11
+		int PLAYER_START = 12, PLAYER_END = 12 + 36; // slots joueur 12..47
+
+		// Si on Shift-clic depuis un slot custom
+		if (index < CUSTOM_END) {
+			// on essaye de renvoyer dans l’inventaire joueur
+			if (!this.moveItemStackTo(stackInSlot, PLAYER_START, PLAYER_END, true)) {
+				return ItemStack.EMPTY;
+			}
+			slot.onQuickCraft(stackInSlot, original);
+
+		} else {
+			// on vient de l'inventaire joueur
+			boolean moved = false;
+
+			// montée de valeur
+			if (stackInSlot.getItem() == Coins.IRON_COIN.get()) {
+				moved = this.moveItemStackTo(stackInSlot, 0, 1, false);
+			} else if (stackInSlot.getItem() == Coins.BRONZE_COIN.get()) {
+				moved = this.moveItemStackTo(stackInSlot, 1, 2, false)
+						|| this.moveItemStackTo(stackInSlot, 6, 7, false); // on peut aussi descendre
+			} else if (stackInSlot.getItem() == Coins.SILVER_COIN.get()) {
+				moved = this.moveItemStackTo(stackInSlot, 2, 3, false)
+						|| this.moveItemStackTo(stackInSlot, 7, 8, false);
+			} else if (stackInSlot.getItem() == Coins.GOLD_COIN.get()) {
+				moved = this.moveItemStackTo(stackInSlot, 8, 9, false);
+			}
+
+			// si pas encore déplacé, on bascule main <-> hotbar
+			if (!moved) {
+				int invMainEnd = PLAYER_START + 27; // 12..38 = main, 39..47 = hotbar
+				if (index < invMainEnd) {
+					moved = this.moveItemStackTo(stackInSlot, invMainEnd, PLAYER_END, false);
+				} else {
+					moved = this.moveItemStackTo(stackInSlot, PLAYER_START, invMainEnd, false);
+				}
+			}
+
+			if (!moved) return ItemStack.EMPTY;
+		}
+
+		// nettoyage du slot d’origine
+		if (stackInSlot.isEmpty()) {
+			slot.set(ItemStack.EMPTY);
+		} else {
+			slot.setChanged();
+		}
+		return original;
 	}
 
-	@Override public void removed(Player player) {
+
+	@Override
+	public void removed(Player player) {
 		super.removed(player);
+
+		// calcul du point devant le joueur
+		Direction look = player.getDirection();
+		double offsetX = look.getStepX() * 0.5;
+		double offsetZ = look.getStepZ() * 0.5;
+		double spawnX = player.getX() + offsetX;
+		double spawnY = player.getY() + 1.0;
+		double spawnZ = player.getZ() + offsetZ;
+
+		// 1) Pour ChangeGUIMenu : vider internal
+		for (int i = 0; i < this.internal.getSlots(); i++) {
+			ItemStack stack = this.internal.extractItem(i, Integer.MAX_VALUE, false);
+			if (!stack.isEmpty()) {
+				if (!player.getInventory().add(stack)) {
+					ItemEntity dropped = new ItemEntity(player.level(), spawnX, spawnY, spawnZ, stack);
+					player.level().addFreshEntity(dropped);
+				}
+			}
+		}
+
+		// 2) Procédure existante
 		ChangeGUIClosedProcedure.execute(world, player);
 	}
+
+
 
 	@Override public Map<Integer, Slot> get() {
 		return customSlots;
