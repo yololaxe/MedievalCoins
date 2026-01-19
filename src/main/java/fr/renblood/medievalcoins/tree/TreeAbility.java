@@ -7,7 +7,8 @@ package fr.renblood.medievalcoins.tree;
 public enum TreeAbility {
     UNBARK("lumberjack", 5),
     FERTILIZE("lumberjack", 9),
-    MAGNET("carpenter", 2);
+    MAGNET("carpenter", 2),
+    JUMPBOOST("carpenter", 5);
 
     private final String jobId;
     private final int progressionIndex;

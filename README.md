@@ -6,6 +6,8 @@ Liste des commandes :
 Tree power : 
 /unbark 
 /fertilize
+/magnet
+/jumpboost
 
 Medieval Coins : 
 /bank 
