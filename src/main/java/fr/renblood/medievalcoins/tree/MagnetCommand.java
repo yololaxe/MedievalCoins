@@ -98,4 +98,9 @@ public class MagnetCommand {
         lastCommandTime.put(uuid, now);
         return false;
     }
+
+    // Méthode utilitaire pour le nettoyage à la déconnexion
+    public static void removePlayer(UUID id) {
+        activePlayers.remove(id);
+    }
 }

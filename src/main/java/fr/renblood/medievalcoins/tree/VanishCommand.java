@@ -83,4 +83,9 @@ public class VanishCommand {
         lastCommandTime.put(uuid, now);
         return false;
     }
+
+    // Méthode utilitaire pour le nettoyage à la déconnexion
+    public static boolean removePlayer(UUID id) {
+        return activePlayers.remove(id);
+    }
 }

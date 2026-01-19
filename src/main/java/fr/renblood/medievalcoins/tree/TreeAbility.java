@@ -11,7 +11,8 @@ public enum TreeAbility {
     JUMPBOOST("carpenter", 5),
     NOFALL("carpenter", 9),
     TORCH("miner", 4),
-    VANISH("glassmaker", 9);
+    VANISH("glassmaker", 9),
+    FIRECAMP("fisherman", 9);
 
     private final String jobId;
     private final int progressionIndex;

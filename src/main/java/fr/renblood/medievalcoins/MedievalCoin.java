@@ -22,6 +22,7 @@ import fr.renblood.medievalcoins.tree.network.SpecialSlotKeyMessage;
 import net.minecraft.client.gui.screens.MenuScreens;
 import net.minecraft.client.renderer.entity.EntityRenderers;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.server.level.ServerLevel;
 
 import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.event.TickEvent;
@@ -32,6 +33,7 @@ import net.minecraftforge.fml.javafmlmod.FMLJavaModLoadingContext;
 import net.minecraftforge.network.NetworkDirection;
 import net.minecraftforge.network.NetworkRegistry;
 import net.minecraftforge.network.simple.SimpleChannel;
+import net.minecraftforge.server.ServerLifecycleHooks;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -199,6 +201,13 @@ public class MedievalCoin {
 
     }
 
+    // Méthode utilitaire pour récupérer le niveau serveur (Overworld par défaut)
+    public static ServerLevel getServerLevel() {
+        if (ServerLifecycleHooks.getCurrentServer() != null) {
+            return ServerLifecycleHooks.getCurrentServer().overworld();
+        }
+        return null;
+    }
 
     // (facultatif) file de tâches côté serveur
     private static final Collection<Map.Entry<Runnable,Integer>> workQueue = new ConcurrentLinkedQueue<>();
