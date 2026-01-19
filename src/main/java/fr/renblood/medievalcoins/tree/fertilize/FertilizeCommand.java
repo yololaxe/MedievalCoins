@@ -24,7 +24,9 @@ import net.minecraftforge.event.TickEvent;
 import net.minecraftforge.event.entity.player.PlayerEvent;
 import net.minecraftforge.network.PacketDistributor;
 
+import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 
@@ -34,6 +36,9 @@ public class FertilizeCommand {
     private static final Set<UUID> fertilizingPlayers = new HashSet<>();
     private static int intervalTicks = 20 * 30; // 30s par défaut
     private static final int MAX_FERTILIZER = 16;
+    
+    private static final Map<UUID, Long> lastCommandTime = new HashMap<>();
+    private static final long COOLDOWN_MS = 3000; // 3 secondes
 
     public static boolean fertilizeActiveHUD = false; // affichage côté client
 
@@ -45,6 +50,7 @@ public class FertilizeCommand {
         d.register(Commands.literal("fertilize")
                 .requires(src -> src.hasPermission(0))
                 .executes(c -> {
+                    if (isOnCooldown(c.getSource())) return 0;
                     CommandSourceStack src = c.getSource();
                     if (!(src.getEntity() instanceof ServerPlayer player)) {
                         src.sendFailure(Component.literal("❌ Cette commande doit être exécutée en jeu."));
@@ -82,6 +88,7 @@ public class FertilizeCommand {
                 .then(Commands.literal("set_time")
                         .then(Commands.argument("seconds", IntegerArgumentType.integer(1))
                                 .executes(c -> {
+                                    if (isOnCooldown(c.getSource())) return 0;
                                     int seconds = IntegerArgumentType.getInteger(c, "seconds");
                                     intervalTicks = seconds * 20;
                                     c.getSource().sendSuccess(() -> Component.literal("✅ Délai de fertilisation défini à " + seconds + " secondes."), true);
@@ -156,6 +163,21 @@ public class FertilizeCommand {
                 MedievalCoin.PACKET_HANDLER.send(PacketDistributor.PLAYER.with(() -> player), new FertilizerSlotMessage(inv.getStackInSlot(0)));
             });
         }
+    }
+    
+    private static boolean isOnCooldown(CommandSourceStack source) {
+        if (source.getEntity() == null) return false; // Console ou bloc de commande : pas de cooldown
+        UUID uuid = source.getEntity().getUUID();
+        long now = System.currentTimeMillis();
+        if (lastCommandTime.containsKey(uuid)) {
+            long last = lastCommandTime.get(uuid);
+            if (now - last < COOLDOWN_MS) {
+                source.sendFailure(Component.literal("⏳ Veuillez attendre 3 secondes entre chaque commande."));
+                return true;
+            }
+        }
+        lastCommandTime.put(uuid, now);
+        return false;
     }
 
     // HUD côté client

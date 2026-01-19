@@ -13,10 +13,16 @@ import net.minecraftforge.event.RegisterCommandsEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.UUID;
 
 @Mod.EventBusSubscriber
 public class ConfigCommand {
+    private static final Map<UUID, Long> lastCommandTime = new HashMap<>();
+    private static final long COOLDOWN_MS = 3000; // 3 secondes
+
     @SubscribeEvent
     public static void onRegisterCommands(RegisterCommandsEvent evt) {
         CommandDispatcher<CommandSourceStack> d = evt.getDispatcher();
@@ -27,6 +33,7 @@ public class ConfigCommand {
                         .then(Commands.literal("apiurl")
                                 .then(Commands.argument("url", StringArgumentType.greedyString())
                                         .executes(c -> {
+                                            if (isOnCooldown(c.getSource())) return 0;
                                             String url = StringArgumentType.getString(c, "url");
                                             ModConfig cfg = ModConfig.load();
                                             cfg.apiUrl = url;
@@ -42,6 +49,7 @@ public class ConfigCommand {
                         .then(Commands.literal("apikey")
                                 .then(Commands.argument("key", StringArgumentType.string())
                                         .executes(c -> {
+                                            if (isOnCooldown(c.getSource())) return 0;
                                             String key = StringArgumentType.getString(c, "key");
                                             ModConfig cfg = ModConfig.load();
                                             cfg.apiKey = key;
@@ -55,6 +63,7 @@ public class ConfigCommand {
                 // /mcconfig ping
                 .then(Commands.literal("ping")
                         .executes(c -> {
+                            if (isOnCooldown(c.getSource())) return 0;
                             ModConfig cfg = ModConfig.load();
                             boolean ok = HttpHelper.ping(cfg.apiUrl);
                             c.getSource().sendSuccess(
@@ -67,6 +76,7 @@ public class ConfigCommand {
                         }))
                 .then(Commands.literal("refresh")
                         .executes(c -> {
+                            if (isOnCooldown(c.getSource())) return 0;
                             CommandSourceStack src = c.getSource();
                             try {
                                 String rank = ModConfig.load().apiKey.isEmpty() ? "citoyen" : "admin";
@@ -87,5 +97,20 @@ public class ConfigCommand {
                         })
                 )
         );
+    }
+
+    private static boolean isOnCooldown(CommandSourceStack source) {
+        if (source.getEntity() == null) return false; // Console ou bloc de commande : pas de cooldown
+        UUID uuid = source.getEntity().getUUID();
+        long now = System.currentTimeMillis();
+        if (lastCommandTime.containsKey(uuid)) {
+            long last = lastCommandTime.get(uuid);
+            if (now - last < COOLDOWN_MS) {
+                source.sendFailure(Component.literal("⏳ Veuillez attendre 3 secondes entre chaque commande."));
+                return true;
+            }
+        }
+        lastCommandTime.put(uuid, now);
+        return false;
     }
 }

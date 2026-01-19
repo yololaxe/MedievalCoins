@@ -16,6 +16,6 @@ Config :
 
 A faire : 
 
-Mettre du délai sur toutes les commandes 
-Mettre du délai sur la récupération de coins 
+X Mettre du délai sur toutes les commandes 
+X Mettre du délai sur la récupération de coins 
 

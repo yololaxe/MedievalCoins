@@ -18,8 +18,14 @@ import net.minecraftforge.event.RegisterCommandsEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
 
+import java.util.HashMap;
+import java.util.Map;
+import java.util.UUID;
+
 @Mod.EventBusSubscriber
 public class UnbarkCommand {
+    private static final Map<UUID, Long> lastCommandTime = new HashMap<>();
+    private static final long COOLDOWN_MS = 3000; // 3 secondes
 
     @SubscribeEvent
     public static void onRegisterCommands(RegisterCommandsEvent evt) {
@@ -28,6 +34,7 @@ public class UnbarkCommand {
         d.register(Commands.literal("unbark")
                 .requires(src -> src.hasPermission(0)) // accessible à tous
                 .executes(c -> {
+                    if (isOnCooldown(c.getSource())) return 0;
 
                     CommandSourceStack src = c.getSource();
                     if (!(src.getEntity() instanceof ServerPlayer player)) {
@@ -95,5 +102,20 @@ public class UnbarkCommand {
                     src.sendSuccess(() -> Component.literal("✅ " + maxTransformable + " bûche(s) écorcée(s) !"), true);
                     return 1;
                 }));
+    }
+
+    private static boolean isOnCooldown(CommandSourceStack source) {
+        if (source.getEntity() == null) return false; // Console ou bloc de commande : pas de cooldown
+        UUID uuid = source.getEntity().getUUID();
+        long now = System.currentTimeMillis();
+        if (lastCommandTime.containsKey(uuid)) {
+            long last = lastCommandTime.get(uuid);
+            if (now - last < COOLDOWN_MS) {
+                source.sendFailure(Component.literal("⏳ Veuillez attendre 3 secondes entre chaque commande."));
+                return true;
+            }
+        }
+        lastCommandTime.put(uuid, now);
+        return false;
     }
 }

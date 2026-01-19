@@ -17,12 +17,18 @@ import net.minecraft.world.item.Item;
 import net.minecraftforge.network.NetworkEvent;
 import net.minecraftforge.network.PacketDistributor;
 
+import java.util.HashMap;
+import java.util.Map;
+import java.util.UUID;
 import java.util.function.Supplier;
 
 public class SubmitWithdrawMessage {
     private final BlockPos pos;
     private final int coinType;
     private final int amount;
+    
+    private static final Map<UUID, Long> lastWithdrawTime = new HashMap<>();
+    private static final long COOLDOWN_MS = 1000; // 1 seconde
 
     public SubmitWithdrawMessage(BlockPos pos, int coinType, int amount) {
         this.pos      = pos.immutable();
@@ -51,6 +57,19 @@ public class SubmitWithdrawMessage {
             if (player == null) return;
             if (!(player.containerMenu instanceof WithdrawGuiMenu)) return;
 
+            // Vérification du cooldown
+            UUID uuid = player.getGameProfile().getId();
+            long now = System.currentTimeMillis();
+            if (lastWithdrawTime.containsKey(uuid)) {
+                long last = lastWithdrawTime.get(uuid);
+                if (now - last < COOLDOWN_MS) {
+                    // Optionnel : envoyer un message de spam
+                    // player.sendSystemMessage(Component.literal("⏳ Veuillez attendre 1 seconde entre chaque retrait."));
+                    return;
+                }
+            }
+            lastWithdrawTime.put(uuid, now);
+
             // --- 1) Prépare la pile à donner ---
             Item item = switch (msg.coinType) {
                 case 0 -> Coins.IRON_COIN.get();
@@ -72,11 +91,11 @@ public class SubmitWithdrawMessage {
             }
 
             // --- 3) Appel API et mise à jour du solde ---
-            String uuid = player.getGameProfile().getId().toString();
-            PlayerModel pm = PlayerCache.getPlayer(uuid);
+            String uuidString = uuid.toString();
+            PlayerModel pm = PlayerCache.getPlayer(uuidString);
             if (pm == null) {
                 try {
-                    pm = ApiClient.getPlayer(uuid);
+                    pm = ApiClient.getPlayer(uuidString);
                     PlayerCache.updatePlayer(pm);
                 } catch (Exception e) {
                     MedievalCoin.LOGGER.error("API getPlayer failed", e);
@@ -101,7 +120,7 @@ public class SubmitWithdrawMessage {
             // --- 5) Notifie le client du nouveau solde ---
             MedievalCoin.PACKET_HANDLER.send(
                     PacketDistributor.PLAYER.with(() -> player),
-                    new MoneyUpdateMessage(uuid, newBalance)
+                    new MoneyUpdateMessage(uuidString, newBalance)
             );
 
             // --- 6) Message de succès ---
@@ -109,7 +128,7 @@ public class SubmitWithdrawMessage {
                     Component.translatable("chat.medieval_coins.withdraw_success", msg.amount)
             );
             MedievalCoin.LOGGER.info("Withdraw {}×type{} for {} → new balance {}",
-                    msg.amount, msg.coinType, uuid, newBalance
+                    msg.amount, msg.coinType, uuidString, newBalance
             );
         });
         ctx.setPacketHandled(true);
