@@ -10,7 +10,8 @@ public enum TreeAbility {
     MAGNET("carpenter", 2),
     JUMPBOOST("carpenter", 5),
     NOFALL("carpenter", 9),
-    TORCH("miner", 4);
+    TORCH("miner", 4),
+    VANISH("glassmaker", 9);
 
     private final String jobId;
     private final int progressionIndex;

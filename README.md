@@ -9,6 +9,8 @@ Tree power :
 /magnet
 /jumpboost
 /nofall
+/torch
+/vanish 
 
 Medieval Coins : 
 /bank 
