@@ -36,7 +36,7 @@ public class WithdrawGuiScreen extends AbstractContainerScreen<WithdrawGuiMenu> 
         MedievalCoin.PACKET_HANDLER.sendToServer(new BankerGuiRefreshMessage());
 
         // conserve les icônes d'origine
-        var slots = menu.get();
+        var slots = menu.slots;
         for (int i = 0; i < 12; i++) {
             defaultStacks[i] = slots.get(i).getItem().copy();
         }
@@ -52,7 +52,7 @@ public class WithdrawGuiScreen extends AbstractContainerScreen<WithdrawGuiMenu> 
         RenderSystem.disableBlend();
 
         // met à jour chaque slot : barrière si pas assez, sinon icône d'origine
-        var slots = menu.get();
+        var slots = menu.slots;
         for (int i = 0; i < 12; i++) {
             int type   = i / 3;
             int amount = switch (i % 3) {

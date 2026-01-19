@@ -1,4 +1,4 @@
-package fr.renblood.medievalcoins.commands.tree;
+package fr.renblood.medievalcoins.tree;
 
 import fr.renblood.medievalcoins.client.model.PlayerModel;
 import fr.renblood.medievalcoins.network.ApiClient;

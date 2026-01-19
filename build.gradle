@@ -172,7 +172,9 @@ tasks.named('processResources', ProcessResources).configure {
 
 // Example for how to get properties into the manifest for reading at runtime.
 tasks.named('jar', Jar).configure {
-    destinationDirectory = file('E:\\Minecraft\\curse\\Instances\\Test 1.20.1\\mods')
+//    destinationDirectory = file('E:\\Minecraft\\curse\\Instances\\Test 1.20.1\\mods')
+    destinationDirectory = file('C:\\Users\\alban\\AppData\\Roaming\\ModrinthApp\\profiles\\Test Mods RP\\mods')
+
     manifest {
         attributes([
                 "Specification-Title": mod_id,

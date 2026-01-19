@@ -16,6 +16,9 @@ import fr.renblood.medievalcoins.network.*;
 import fr.renblood.medievalcoins.procedures.OpenDepositGuiMessage;
 
 import fr.renblood.medievalcoins.procedures.OpenWithdrawGuiMessage;
+import fr.renblood.medievalcoins.tree.network.FertilizeKeyMessage;
+import fr.renblood.medievalcoins.tree.network.FertilizeStateMessage;
+import fr.renblood.medievalcoins.tree.network.FertilizerSlotMessage;
 import net.minecraft.client.gui.screens.MenuScreens;
 import net.minecraft.client.renderer.entity.EntityRenderers;
 import net.minecraft.resources.ResourceLocation;
@@ -44,6 +47,9 @@ public class MedievalCoin {
     public static final String MODID = "medieval_coins";
     public static final Logger LOGGER = LogManager.getLogger();
     private static final String PROTOCOL_VERSION = "1";
+    
+    // Variable globale de debug
+    public static boolean DEBUG_MODE = true;
 
     // 1) Channel réseau
     public static final SimpleChannel PACKET_HANDLER = NetworkRegistry.newSimpleChannel(
@@ -163,6 +169,34 @@ public class MedievalCoin {
                 SubmitWithdrawMessage::handle,
                 Optional.of(NetworkDirection.PLAY_TO_SERVER)
         );
+
+        PACKET_HANDLER.registerMessage(
+                messageID++,
+                FertilizeKeyMessage.class,
+                FertilizeKeyMessage::encode,
+                FertilizeKeyMessage::decode,
+                FertilizeKeyMessage::handle,
+                Optional.of(NetworkDirection.PLAY_TO_SERVER)
+        );
+
+        PACKET_HANDLER.registerMessage(
+                messageID++,
+                FertilizerSlotMessage.class,
+                FertilizerSlotMessage::encode,
+                FertilizerSlotMessage::decode,
+                FertilizerSlotMessage::handle,
+                Optional.of(NetworkDirection.PLAY_TO_CLIENT)
+        );
+
+        PACKET_HANDLER.registerMessage(
+                messageID++,
+                FertilizeStateMessage.class,
+                FertilizeStateMessage::encode,
+                FertilizeStateMessage::decode,
+                FertilizeStateMessage::handle,
+                Optional.of(NetworkDirection.PLAY_TO_CLIENT)
+        );
+
     }
 
 

@@ -1,8 +1,15 @@
-package fr.renblood.medievalcoins.commands.tree.fertilize;
+package fr.renblood.medievalcoins.tree.fertilize;
 
 import com.mojang.brigadier.CommandDispatcher;
-import fr.renblood.medievalcoins.commands.tree.TreeAbility;
-import fr.renblood.medievalcoins.commands.tree.TreePermissionChecker;
+import com.mojang.brigadier.arguments.IntegerArgumentType;
+
+import fr.renblood.medievalcoins.MedievalCoin;
+import fr.renblood.medievalcoins.tree.TreeAbility;
+import fr.renblood.medievalcoins.tree.TreePermissionChecker;
+import fr.renblood.medievalcoins.tree.capability.FertilizerCapabilityHandler;
+import fr.renblood.medievalcoins.tree.capability.FertilizerInventory;
+import fr.renblood.medievalcoins.tree.network.FertilizeStateMessage;
+import fr.renblood.medievalcoins.tree.network.FertilizerSlotMessage;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.commands.Commands;
 import net.minecraft.network.chat.Component;
@@ -11,9 +18,11 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.client.event.RenderGuiOverlayEvent;
+import net.minecraftforge.common.util.LazyOptional;
 import net.minecraftforge.event.RegisterCommandsEvent;
 import net.minecraftforge.event.TickEvent;
-import net.minecraftforge.event.entity.item.ItemTossEvent;
+import net.minecraftforge.event.entity.player.PlayerEvent;
+import net.minecraftforge.network.PacketDistributor;
 
 import java.util.HashSet;
 import java.util.Set;
@@ -23,9 +32,8 @@ import java.util.UUID;
 public class FertilizeCommand {
 
     private static final Set<UUID> fertilizingPlayers = new HashSet<>();
-    private static final int INTERVAL_TICKS = 20 * 30; // 30s
+    private static int intervalTicks = 20 * 30; // 30s par défaut
     private static final int MAX_FERTILIZER = 16;
-    private static final int FERTILIZER_SLOT = 8; // dernier slot hotbar
 
     public static boolean fertilizeActiveHUD = false; // affichage côté client
 
@@ -33,6 +41,7 @@ public class FertilizeCommand {
     public static void onRegisterCommands(RegisterCommandsEvent evt) {
         CommandDispatcher<CommandSourceStack> d = evt.getDispatcher();
 
+        // Commande principale /fertilize
         d.register(Commands.literal("fertilize")
                 .requires(src -> src.hasPermission(0))
                 .executes(c -> {
@@ -49,28 +58,48 @@ public class FertilizeCommand {
                     }
 
                     UUID id = player.getUUID();
+                    boolean isActive;
                     if (fertilizingPlayers.contains(id)) {
                         fertilizingPlayers.remove(id);
                         clearFertilizerSlot(player);
-                        fertilizeActiveHUD = false;
+                        isActive = false;
                         src.sendSuccess(() -> Component.literal("❌ Mode fertilisation désactivé."), true);
                     } else {
                         fertilizingPlayers.add(id);
-                        fertilizeActiveHUD = true;
+                        isActive = true;
                         src.sendSuccess(() -> Component.literal("✅ Mode fertilisation activé."), true);
+                        // Donne immédiatement un fertilizer pour commencer
+                        giveFertilizer(player);
                     }
+                    // Envoie l'état au client
+                    MedievalCoin.PACKET_HANDLER.send(PacketDistributor.PLAYER.with(() -> player), new FertilizeStateMessage(isActive));
                     return 1;
                 }));
+
+        // Commande admin pour configurer le délai : /fertilize_config set_time <seconds>
+        d.register(Commands.literal("fertilize_config")
+                .requires(src -> src.hasPermission(2)) // Permission admin (OP niveau 2+)
+                .then(Commands.literal("set_time")
+                        .then(Commands.argument("seconds", IntegerArgumentType.integer(1))
+                                .executes(c -> {
+                                    int seconds = IntegerArgumentType.getInteger(c, "seconds");
+                                    intervalTicks = seconds * 20;
+                                    c.getSource().sendSuccess(() -> Component.literal("✅ Délai de fertilisation défini à " + seconds + " secondes."), true);
+                                    return 1;
+                                })
+                        )
+                )
+        );
     }
 
-    // Tick serveur : ajoute 1 bone meal toutes les 30s
+    // Tick serveur : ajoute 1 bone meal toutes les X secondes
     @net.minecraftforge.eventbus.api.SubscribeEvent
     public static void onServerTick(TickEvent.ServerTickEvent event) {
         if (event.phase != TickEvent.Phase.END) return;
         for (ServerPlayer player : playerListCopy()) {
             if (!fertilizingPlayers.contains(player.getUUID())) continue;
 
-            if (player.tickCount % INTERVAL_TICKS == 0) {
+            if (player.tickCount % intervalTicks == 0) {
                 giveFertilizer(player);
             }
         }
@@ -83,59 +112,49 @@ public class FertilizeCommand {
 
     /** Donne 1 bone meal vanilla dans le slot spécial */
     private static void giveFertilizer(ServerPlayer player) {
-        ItemStack slot = player.getInventory().getItem(FERTILIZER_SLOT);
-
-        if (!slot.isEmpty() && slot.getItem() == Items.BONE_MEAL) {
-            if (slot.getCount() < MAX_FERTILIZER) {
-                slot.grow(1);
+        LazyOptional<FertilizerInventory> cap = player.getCapability(FertilizerCapabilityHandler.FERTILIZER_CAP);
+        if (cap.isPresent()) {
+            cap.ifPresent(inv -> {
+                ItemStack current = inv.getStackInSlot(0);
+                if (current.isEmpty()) {
+                    inv.setStackInSlot(0, new ItemStack(Items.BONE_MEAL, 1));
+                } else if (current.getCount() < MAX_FERTILIZER) {
+                    current.grow(1);
+                    inv.setStackInSlot(0, current);
+                }
+                // Synchronise avec le client
+                MedievalCoin.PACKET_HANDLER.send(PacketDistributor.PLAYER.with(() -> player), new FertilizerSlotMessage(inv.getStackInSlot(0)));
+                
+                if (MedievalCoin.DEBUG_MODE) {
+                    MedievalCoin.LOGGER.info("Gave fertilizer to " + player.getName().getString() + ". New count: " + inv.getStackInSlot(0).getCount());
+                }
+            });
+        } else {
+            if (MedievalCoin.DEBUG_MODE) {
+                MedievalCoin.LOGGER.error("Failed to give fertilizer: Capability not present on player " + player.getName().getString());
             }
-            return;
-        }
-
-        if (slot.isEmpty()) {
-            ItemStack newStack = new ItemStack(Items.BONE_MEAL, 1);
-            newStack.setHoverName(Component.literal("🌱 Fertilizer"));
-            player.getInventory().setItem(FERTILIZER_SLOT, newStack);
         }
     }
 
     /** Nettoie le slot spécial à la désactivation */
     private static void clearFertilizerSlot(ServerPlayer player) {
-        ItemStack slot = player.getInventory().getItem(FERTILIZER_SLOT);
-        if (!slot.isEmpty() && slot.getItem() == Items.BONE_MEAL) {
-            player.getInventory().setItem(FERTILIZER_SLOT, ItemStack.EMPTY);
-        }
+        player.getCapability(FertilizerCapabilityHandler.FERTILIZER_CAP).ifPresent(inv -> {
+            inv.setStackInSlot(0, ItemStack.EMPTY);
+            MedievalCoin.PACKET_HANDLER.send(PacketDistributor.PLAYER.with(() -> player), new FertilizerSlotMessage(ItemStack.EMPTY));
+        });
     }
 
-    // Empêche de drop la bone meal spéciale
+    // Synchronise l'état lors de la connexion
     @net.minecraftforge.eventbus.api.SubscribeEvent
-    public static void onItemToss(ItemTossEvent event) {
-        if (event.getEntity().getItem().getItem() == Items.BONE_MEAL) {
-            event.setCanceled(true);
-            if (event.getPlayer() != null) {
-                event.getPlayer().displayClientMessage(
-                        Component.literal("⚠️ Impossible de drop la Fertilizer !"), true
-                );
-            }
-        }
-    }
-
-    // Surveille les déplacements : on le ramène toujours dans slot 8
-    @net.minecraftforge.eventbus.api.SubscribeEvent
-    public static void onPlayerTick(TickEvent.PlayerTickEvent event) {
-        if (!(event.player instanceof ServerPlayer player)) return;
-        if (event.phase != TickEvent.Phase.END) return;
-
-        for (int i = 0; i < player.getInventory().items.size(); i++) {
-            if (i == FERTILIZER_SLOT) continue;
-            ItemStack stack = player.getInventory().items.get(i);
-            if (stack.getItem() == Items.BONE_MEAL) {
-                // supprime et replace dans slot verrouillé
-                player.getInventory().removeItem(i, stack.getCount());
-                if (player.getInventory().getItem(FERTILIZER_SLOT).isEmpty()) {
-                    player.getInventory().setItem(FERTILIZER_SLOT, stack);
-                }
-            }
+    public static void onPlayerLogin(PlayerEvent.PlayerLoggedInEvent event) {
+        if (event.getEntity() instanceof ServerPlayer player) {
+            boolean isActive = fertilizingPlayers.contains(player.getUUID());
+            MedievalCoin.PACKET_HANDLER.send(PacketDistributor.PLAYER.with(() -> player), new FertilizeStateMessage(isActive));
+            
+            // Synchronise aussi l'inventaire
+            player.getCapability(FertilizerCapabilityHandler.FERTILIZER_CAP).ifPresent(inv -> {
+                MedievalCoin.PACKET_HANDLER.send(PacketDistributor.PLAYER.with(() -> player), new FertilizerSlotMessage(inv.getStackInSlot(0)));
+            });
         }
     }
 

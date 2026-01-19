@@ -13,3 +13,9 @@ Medieval Coins :
 Config : 
 /mcconfig (set [apikey/apiurl]) (ping)
 
+
+A faire : 
+
+Mettre du délai sur toutes les commandes 
+Mettre du délai sur la récupération de coins 
+

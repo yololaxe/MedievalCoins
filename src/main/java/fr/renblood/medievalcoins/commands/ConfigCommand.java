@@ -25,20 +25,19 @@ public class ConfigCommand {
                 // /mcconfig set apiurl <url>
                 .then(Commands.literal("set")
                         .then(Commands.literal("apiurl")
-                                .then(Commands.argument("url", StringArgumentType.string())
+                                .then(Commands.argument("url", StringArgumentType.greedyString())
                                         .executes(c -> {
                                             String url = StringArgumentType.getString(c, "url");
                                             ModConfig cfg = ModConfig.load();
                                             cfg.apiUrl = url;
                                             ModConfig.save();
-                                            // ici : on appelle la méthode statique, sans "new"
                                             c.getSource().sendSuccess(
                                                     () -> Component.literal("API URL mise à jour : " + url),
                                                     true
                                             );
                                             return 1;
                                         }))))
-                // /mcconfig set apikey <clé>
+                                // /mcconfig set apikey <clé>
                 .then(Commands.literal("set")
                         .then(Commands.literal("apikey")
                                 .then(Commands.argument("key", StringArgumentType.string())

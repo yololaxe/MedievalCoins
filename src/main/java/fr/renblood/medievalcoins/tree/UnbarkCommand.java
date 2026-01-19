@@ -1,4 +1,4 @@
-package fr.renblood.medievalcoins.commands.tree;
+package fr.renblood.medievalcoins.tree;
 
 import com.mojang.brigadier.CommandDispatcher;
 import net.minecraft.commands.CommandSourceStack;

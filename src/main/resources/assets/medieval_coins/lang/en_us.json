@@ -35,5 +35,8 @@
   "gui.medieval_coins.banker_gui.label_3": "Bronze",
   "gui.medieval_coins.banker_gui.label_4": "Iron",
 
-  "block.medieval_coins.bank_dashboard": "Bank Dashboard"
+  "block.medieval_coins.bank_dashboard": "Bank Dashboard",
+
+  "key.medieval_coins.fertilize": "Fertilize",
+  "key.categories.medieval_coins": "Medieval Coins"
 }

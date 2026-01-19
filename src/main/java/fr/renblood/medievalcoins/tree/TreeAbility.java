@@ -1,4 +1,4 @@
-package fr.renblood.medievalcoins.commands.tree;
+package fr.renblood.medievalcoins.tree;
 
 /**
  * Enum centralisant les compétences "tree".

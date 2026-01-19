@@ -1,4 +1,4 @@
-package fr.renblood.medievalcoins.commands.tree.fertilize;
+package fr.renblood.medievalcoins.tree.fertilize;
 
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.InteractionResult;
