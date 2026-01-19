@@ -8,6 +8,7 @@ Tree power :
 /fertilize
 /magnet
 /jumpboost
+/nofall
 
 Medieval Coins : 
 /bank 
