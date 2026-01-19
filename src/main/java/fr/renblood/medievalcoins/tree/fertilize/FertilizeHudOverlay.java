@@ -2,11 +2,13 @@ package fr.renblood.medievalcoins.tree.fertilize;
 
 import com.mojang.blaze3d.systems.RenderSystem;
 import fr.renblood.medievalcoins.MedievalCoin;
-import fr.renblood.medievalcoins.tree.capability.FertilizerCapabilityHandler;
+import fr.renblood.medievalcoins.init.BlockInit;
+import fr.renblood.medievalcoins.tree.capability.SpecialSlotCapabilityHandler;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.Items;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.client.event.RenderGuiOverlayEvent;
 import net.minecraftforge.client.gui.overlay.VanillaGuiOverlay;
@@ -14,7 +16,7 @@ import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
 
 /**
- * Overlay client : affiche le slot Fertilizer (10ème slot à droite de la hotbar).
+ * Overlay client : affiche le slot spécial (10ème slot à droite de la hotbar).
  */
 @Mod.EventBusSubscriber(value = Dist.CLIENT, modid = MedievalCoin.MODID)
 public class FertilizeHudOverlay {
@@ -54,16 +56,36 @@ public class FertilizeHudOverlay {
         
         RenderSystem.disableBlend();
 
-        // Affiche l’item stocké dans la capability Fertilizer
-        mc.player.getCapability(FertilizerCapabilityHandler.FERTILIZER_CAP).ifPresent(inv -> {
+        // Affiche l’item stocké dans la capability SpecialSlot
+        mc.player.getCapability(SpecialSlotCapabilityHandler.SPECIAL_SLOT_CAP).ifPresent(inv -> {
             ItemStack stack = inv.getStackInSlot(0);
             if (!stack.isEmpty()) {
-                gui.renderItem(stack, x + 3, y + 3);
-                gui.renderItemDecorations(mc.font, stack, x + 3, y + 3);
-            } else if (MedievalCoin.DEBUG_MODE) {
-                // Debug visuel si vide (carré rouge temporaire)
-                // gui.fill(x + 3, y + 3, x + 19, y + 19, 0x80FF0000);C
+                // Si c'est notre torche magique, on force l'affichage de la torche vanilla pour éviter les bugs de texture
+                if (stack.getItem() == BlockInit.MAGIC_TORCH.get().asItem()) {
+                    gui.renderItem(new ItemStack(Items.TORCH), x + 3, y + 3);
+                    gui.renderItemDecorations(mc.font, new ItemStack(Items.TORCH), x + 3, y + 3);
+                } else {
+                    gui.renderItem(stack, x + 3, y + 3);
+                    gui.renderItemDecorations(mc.font, stack, x + 3, y + 3);
+                }
             }
+        });
+        
+        // Affiche le texte du mode actif
+        mc.player.getCapability(SpecialSlotCapabilityHandler.SPECIAL_SLOT_CAP).ifPresent(inv -> {
+            ItemStack stack = inv.getStackInSlot(0);
+            String text = "Special Mode ON";
+            int color = 0xFFFFFF;
+            
+            if (stack.getItem() == Items.BONE_MEAL) {
+                text = "🌱 Fertilizer Mode ON";
+                color = 0x00FF00;
+            } else if (stack.getItem().toString().contains("torch")) {
+                text = "🔥 Torch Mode ON";
+                color = 0xFFA500;
+            }
+            
+            gui.drawString(mc.font, text, screenWidth / 2 - 40, screenHeight - 70, color, true);
         });
     }
 }

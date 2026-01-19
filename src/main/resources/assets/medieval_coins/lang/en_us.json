@@ -36,7 +36,9 @@
   "gui.medieval_coins.banker_gui.label_4": "Iron",
 
   "block.medieval_coins.bank_dashboard": "Bank Dashboard",
+  "block.medieval_coins.magic_torch": "Magic Torch",
+  "block.medieval_coins.magic_wall_torch": "Magic Torch",
 
-  "key.medieval_coins.fertilize": "Fertilize",
+  "key.medieval_coins.special_slot": "Use Special Ability",
   "key.categories.medieval_coins": "Medieval Coins"
 }

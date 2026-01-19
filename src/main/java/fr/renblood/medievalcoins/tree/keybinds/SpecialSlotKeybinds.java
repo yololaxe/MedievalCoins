@@ -1,4 +1,3 @@
-// src/main/java/fr/renblood/medievalcoins/tree/keybinds/FertilizeKeybinds.java
 package fr.renblood.medievalcoins.tree.keybinds;
 
 import com.mojang.blaze3d.platform.InputConstants;
@@ -12,14 +11,14 @@ import net.minecraftforge.fml.common.Mod;
 import org.lwjgl.glfw.GLFW;
 
 @Mod.EventBusSubscriber(modid = MedievalCoin.MODID, value = Dist.CLIENT, bus = Mod.EventBusSubscriber.Bus.MOD)
-public class FertilizeKeybinds {
+public class SpecialSlotKeybinds {
 
     public static final KeyMapping KEY = new KeyMapping(
-            "key.medieval_coins.fertilize",
+            "key.medieval_coins.special_slot",
             KeyConflictContext.IN_GAME,
             InputConstants.Type.KEYSYM,
             GLFW.GLFW_KEY_R,
-            "key.categories.medieval_coins" // Catégorie personnalisée pour mieux la retrouver
+            "key.categories.medieval_coins"
     );
 
     @SubscribeEvent

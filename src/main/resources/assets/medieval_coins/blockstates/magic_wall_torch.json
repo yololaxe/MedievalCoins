@@ -1,0 +1,8 @@
+{
+  "variants": {
+    "facing=east": { "model": "medieval_coins:block/magic_wall_torch" },
+    "facing=north": { "model": "medieval_coins:block/magic_wall_torch", "y": 270 },
+    "facing=south": { "model": "medieval_coins:block/magic_wall_torch", "y": 90 },
+    "facing=west": { "model": "medieval_coins:block/magic_wall_torch", "y": 180 }
+  }
+}

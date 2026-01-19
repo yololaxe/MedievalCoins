@@ -4,10 +4,11 @@ import com.mojang.brigadier.CommandDispatcher;
 import com.mojang.brigadier.arguments.IntegerArgumentType;
 
 import fr.renblood.medievalcoins.MedievalCoin;
+import fr.renblood.medievalcoins.tree.TorchCommand;
 import fr.renblood.medievalcoins.tree.TreeAbility;
 import fr.renblood.medievalcoins.tree.TreePermissionChecker;
-import fr.renblood.medievalcoins.tree.capability.FertilizerCapabilityHandler;
-import fr.renblood.medievalcoins.tree.capability.FertilizerInventory;
+import fr.renblood.medievalcoins.tree.capability.SpecialSlotCapabilityHandler;
+import fr.renblood.medievalcoins.tree.capability.SpecialSlotInventory;
 import fr.renblood.medievalcoins.tree.network.FertilizeStateMessage;
 import fr.renblood.medievalcoins.tree.network.FertilizerSlotMessage;
 import net.minecraft.commands.CommandSourceStack;
@@ -33,7 +34,7 @@ import java.util.UUID;
 @net.minecraftforge.fml.common.Mod.EventBusSubscriber
 public class FertilizeCommand {
 
-    private static final Set<UUID> fertilizingPlayers = new HashSet<>();
+    public static final Set<UUID> fertilizingPlayers = new HashSet<>();
     private static int intervalTicks = 20 * 30; // 30s par défaut
     private static final int MAX_FERTILIZER = 16;
     
@@ -71,6 +72,12 @@ public class FertilizeCommand {
                         isActive = false;
                         src.sendSuccess(() -> Component.literal("❌ Mode fertilisation désactivé."), true);
                     } else {
+                        // Désactive le mode Torche si actif
+                        if (TorchCommand.activePlayers.contains(id)) {
+                            TorchCommand.activePlayers.remove(id);
+                            src.sendSuccess(() -> Component.literal("⚠️ Mode Torche désactivé automatiquement."), false);
+                        }
+
                         fertilizingPlayers.add(id);
                         isActive = true;
                         src.sendSuccess(() -> Component.literal("✅ Mode fertilisation activé."), true);
@@ -119,21 +126,28 @@ public class FertilizeCommand {
 
     /** Donne 1 bone meal vanilla dans le slot spécial */
     private static void giveFertilizer(ServerPlayer player) {
-        LazyOptional<FertilizerInventory> cap = player.getCapability(FertilizerCapabilityHandler.FERTILIZER_CAP);
+        LazyOptional<SpecialSlotInventory> cap = player.getCapability(SpecialSlotCapabilityHandler.SPECIAL_SLOT_CAP);
         if (cap.isPresent()) {
             cap.ifPresent(inv -> {
                 ItemStack current = inv.getStackInSlot(0);
-                if (current.isEmpty()) {
+                // Si le slot est vide ou contient déjà de la bone meal
+                if (current.isEmpty() || current.getItem() == Items.BONE_MEAL) {
+                    if (current.isEmpty()) {
+                        inv.setStackInSlot(0, new ItemStack(Items.BONE_MEAL, 1));
+                    } else if (current.getCount() < MAX_FERTILIZER) {
+                        current.grow(1);
+                        inv.setStackInSlot(0, current);
+                    }
+                    // Synchronise avec le client
+                    MedievalCoin.PACKET_HANDLER.send(PacketDistributor.PLAYER.with(() -> player), new FertilizerSlotMessage(inv.getStackInSlot(0)));
+                    
+                    if (MedievalCoin.DEBUG_MODE) {
+                        MedievalCoin.LOGGER.info("Gave fertilizer to " + player.getName().getString() + ". New count: " + inv.getStackInSlot(0).getCount());
+                    }
+                } else {
+                    // Si le slot contient autre chose (ex: torche), on écrase pour le mode Fertilize
                     inv.setStackInSlot(0, new ItemStack(Items.BONE_MEAL, 1));
-                } else if (current.getCount() < MAX_FERTILIZER) {
-                    current.grow(1);
-                    inv.setStackInSlot(0, current);
-                }
-                // Synchronise avec le client
-                MedievalCoin.PACKET_HANDLER.send(PacketDistributor.PLAYER.with(() -> player), new FertilizerSlotMessage(inv.getStackInSlot(0)));
-                
-                if (MedievalCoin.DEBUG_MODE) {
-                    MedievalCoin.LOGGER.info("Gave fertilizer to " + player.getName().getString() + ". New count: " + inv.getStackInSlot(0).getCount());
+                    MedievalCoin.PACKET_HANDLER.send(PacketDistributor.PLAYER.with(() -> player), new FertilizerSlotMessage(inv.getStackInSlot(0)));
                 }
             });
         } else {
@@ -145,7 +159,7 @@ public class FertilizeCommand {
 
     /** Nettoie le slot spécial à la désactivation */
     private static void clearFertilizerSlot(ServerPlayer player) {
-        player.getCapability(FertilizerCapabilityHandler.FERTILIZER_CAP).ifPresent(inv -> {
+        player.getCapability(SpecialSlotCapabilityHandler.SPECIAL_SLOT_CAP).ifPresent(inv -> {
             inv.setStackInSlot(0, ItemStack.EMPTY);
             MedievalCoin.PACKET_HANDLER.send(PacketDistributor.PLAYER.with(() -> player), new FertilizerSlotMessage(ItemStack.EMPTY));
         });
@@ -159,7 +173,7 @@ public class FertilizeCommand {
             MedievalCoin.PACKET_HANDLER.send(PacketDistributor.PLAYER.with(() -> player), new FertilizeStateMessage(isActive));
             
             // Synchronise aussi l'inventaire
-            player.getCapability(FertilizerCapabilityHandler.FERTILIZER_CAP).ifPresent(inv -> {
+            player.getCapability(SpecialSlotCapabilityHandler.SPECIAL_SLOT_CAP).ifPresent(inv -> {
                 MedievalCoin.PACKET_HANDLER.send(PacketDistributor.PLAYER.with(() -> player), new FertilizerSlotMessage(inv.getStackInSlot(0)));
             });
         }
@@ -178,19 +192,5 @@ public class FertilizeCommand {
         }
         lastCommandTime.put(uuid, now);
         return false;
-    }
-
-    // HUD côté client
-    @net.minecraftforge.fml.common.Mod.EventBusSubscriber(value = Dist.CLIENT)
-    public static class FertilizeHUD {
-        @net.minecraftforge.eventbus.api.SubscribeEvent
-        public static void renderHUD(RenderGuiOverlayEvent.Post event) {
-            if (!fertilizeActiveHUD) return;
-            net.minecraft.client.Minecraft mc = net.minecraft.client.Minecraft.getInstance();
-            net.minecraft.client.gui.GuiGraphics gui = event.getGuiGraphics();
-            int x = mc.getWindow().getGuiScaledWidth() / 2;
-            int y = mc.getWindow().getGuiScaledHeight() - 70;
-            gui.drawString(mc.font, "🌱 Fertilizer Mode ON", x - 40, y, 0x00FF00, true);
-        }
     }
 }

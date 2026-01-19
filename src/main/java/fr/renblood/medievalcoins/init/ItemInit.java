@@ -21,7 +21,11 @@ public class ItemInit {
             CreativeTab.addToTab(REGISTRY.register("bank_dashboard",
                     () -> new BlockItem(BlockInit.BANK_DASHBOARD.get(), new Item.Properties())));
 
-
+    // Items pour les torches magiques (pas besoin d'être dans le creative tab car item technique)
+    public static final RegistryObject<Item> MAGIC_TORCH = REGISTRY.register("magic_torch",
+            () -> new BlockItem(BlockInit.MAGIC_TORCH.get(), new Item.Properties()));
+            
+    // Pas besoin d'item pour la wall torch, elle est posée via le blockstate de la torche normale ou via logique custom
 
     // Méthode utilitaire pour enregistrer un BlockItem
     private static RegistryObject<Item> block(RegistryObject<Block> block) {

@@ -1,7 +1,7 @@
 package fr.renblood.medievalcoins.tree.network;
 
 import fr.renblood.medievalcoins.MedievalCoin;
-import fr.renblood.medievalcoins.tree.capability.FertilizerCapabilityHandler;
+import fr.renblood.medievalcoins.tree.capability.SpecialSlotCapabilityHandler;
 import net.minecraft.client.Minecraft;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.world.item.ItemStack;
@@ -33,7 +33,8 @@ public class FertilizerSlotMessage {
                 MedievalCoin.LOGGER.info("Client received FertilizerSlotMessage. Stack: " + msg.stack + " Count: " + msg.stack.getCount());
             }
 
-            mc.player.getCapability(FertilizerCapabilityHandler.FERTILIZER_CAP).ifPresent(inv -> {
+            // Utilisation de la nouvelle capability SpecialSlotCapabilityHandler
+            mc.player.getCapability(SpecialSlotCapabilityHandler.SPECIAL_SLOT_CAP).ifPresent(inv -> {
                 inv.setStackInSlot(0, msg.stack);
                 if (MedievalCoin.DEBUG_MODE) {
                     MedievalCoin.LOGGER.info("Client capability updated. New slot content: " + inv.getStackInSlot(0));

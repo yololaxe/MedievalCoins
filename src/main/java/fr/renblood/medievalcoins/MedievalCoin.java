@@ -16,9 +16,9 @@ import fr.renblood.medievalcoins.network.*;
 import fr.renblood.medievalcoins.procedures.OpenDepositGuiMessage;
 
 import fr.renblood.medievalcoins.procedures.OpenWithdrawGuiMessage;
-import fr.renblood.medievalcoins.tree.network.FertilizeKeyMessage;
 import fr.renblood.medievalcoins.tree.network.FertilizeStateMessage;
 import fr.renblood.medievalcoins.tree.network.FertilizerSlotMessage;
+import fr.renblood.medievalcoins.tree.network.SpecialSlotKeyMessage;
 import net.minecraft.client.gui.screens.MenuScreens;
 import net.minecraft.client.renderer.entity.EntityRenderers;
 import net.minecraft.resources.ResourceLocation;
@@ -172,10 +172,10 @@ public class MedievalCoin {
 
         PACKET_HANDLER.registerMessage(
                 messageID++,
-                FertilizeKeyMessage.class,
-                FertilizeKeyMessage::encode,
-                FertilizeKeyMessage::decode,
-                FertilizeKeyMessage::handle,
+                SpecialSlotKeyMessage.class,
+                SpecialSlotKeyMessage::encode,
+                SpecialSlotKeyMessage::decode,
+                SpecialSlotKeyMessage::handle,
                 Optional.of(NetworkDirection.PLAY_TO_SERVER)
         );
 
