@@ -15,7 +15,8 @@ import java.net.URL;
 import java.util.List;
 
 public class ApiClient {
-    private static final Gson GSON = new Gson();
+    // On utilise le GSON configuré de PlayerModel pour bénéficier des adapters personnalisés
+    private static final Gson GSON = PlayerModel.GSON;
 
     /**
      * Récupère tous les joueurs depuis /players?rank=<rank>
@@ -77,7 +78,7 @@ public class ApiClient {
         in.close();
         conn.disconnect();
 
-        // Désérialisation
+        // Désérialisation avec le GSON configuré de PlayerModel
         Type listType = new TypeToken<List<PlayerModel>>(){}.getType();
         return GSON.fromJson(sb.toString(), listType);
     }
