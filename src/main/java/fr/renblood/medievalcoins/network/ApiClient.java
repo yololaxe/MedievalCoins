@@ -82,6 +82,43 @@ public class ApiClient {
         Type listType = new TypeToken<List<PlayerModel>>(){}.getType();
         return GSON.fromJson(sb.toString(), listType);
     }
+    public static JsonObject manageJobXp(String mcId, String action, String jobName, int amount) throws Exception {
+        ModConfig cfg = ModConfig.load();
+        if (cfg.apiKey == null || cfg.apiKey.isEmpty()) {
+            throw new IllegalStateException("API key non configurée");
+        }
+
+        String endpoint = cfg.apiUrl + "/players/manage_job_xp/" + mcId + "/";
+        URL url = new URL(endpoint);
+        HttpURLConnection conn = (HttpURLConnection) url.openConnection();
+        conn.setRequestMethod("POST");
+        conn.setRequestProperty("Authorization", "Bearer " + cfg.apiKey);
+        conn.setRequestProperty("Content-Type", "application/json");
+        conn.setDoOutput(true);
+        conn.setConnectTimeout(3000);
+        conn.setReadTimeout(3000);
+
+        JsonObject body = new JsonObject();
+        body.addProperty("action", action);
+        body.addProperty("job", jobName);
+        body.addProperty("amount", amount);
+
+        try (OutputStream os = conn.getOutputStream()) {
+            os.write(GSON.toJson(body).getBytes());
+            os.flush();
+        }
+
+        int code = conn.getResponseCode();
+        if (code < 200 || code >= 300) {
+            throw new RuntimeException("Erreur HTTP " + code + " sur " + endpoint);
+        }
+
+        try (var reader = new InputStreamReader(conn.getInputStream())) {
+            return GSON.fromJson(reader, JsonObject.class);
+        } finally {
+            conn.disconnect();
+        }
+    }
     public static int deposit(String playerId, int amount) throws Exception {
         ModConfig cfg = ModConfig.load();
         if (cfg.apiKey == null || cfg.apiKey.isEmpty()) {
