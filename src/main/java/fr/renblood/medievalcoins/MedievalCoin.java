@@ -199,6 +199,15 @@ public class MedievalCoin {
                 Optional.of(NetworkDirection.PLAY_TO_CLIENT)
         );
 
+        PACKET_HANDLER.registerMessage(
+                messageID++,
+                PlayerStatsUpdateMessage.class,
+                PlayerStatsUpdateMessage::encode,
+                PlayerStatsUpdateMessage::decode,
+                PlayerStatsUpdateMessage::handle,
+                Optional.of(NetworkDirection.PLAY_TO_CLIENT)
+        );
+
     }
 
     // Méthode utilitaire pour récupérer le niveau serveur (Overworld par défaut)

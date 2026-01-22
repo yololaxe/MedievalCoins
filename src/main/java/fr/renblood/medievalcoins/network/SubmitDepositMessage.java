@@ -16,14 +16,12 @@ import net.minecraftforge.network.PacketDistributor;
 
 import java.util.function.Supplier;
 
-import net.minecraft.world.SimpleMenuProvider;
-
-import io.netty.buffer.Unpooled;
 import net.minecraft.world.MenuProvider;
 import net.minecraft.world.inventory.AbstractContainerMenu;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.entity.player.Player;
 import net.minecraftforge.network.NetworkHooks;
+import io.netty.buffer.Unpooled;
 
 
 public class SubmitDepositMessage {
@@ -104,15 +102,19 @@ public class SubmitDepositMessage {
                 pm.money        = newBalance;
                 PlayerCache.updatePlayer(pm);
 
-                // 7) Envoyer la mise à jour au client
+                // 7) Envoyer la mise à jour au client (MoneyUpdateMessage est spécifique à l'argent, on garde pour compatibilité)
                 MoneyUpdateMessage update = new MoneyUpdateMessage(mcUuid, newBalance);
                 MedievalCoin.PACKET_HANDLER.send(
                         PacketDistributor.PLAYER.with(() -> sender),
                         update
                 );
+                
+                // 7b) Envoyer le PlayerModel complet pour mettre à jour le cache client global
+                MedievalCoin.PACKET_HANDLER.send(
+                        PacketDistributor.PLAYER.with(() -> sender),
+                        new PlayerStatsUpdateMessage(pm)
+                );
 
-                // 8) Ré-ouvrir le GUI du banquier à la même position
-                // 8) Ré-ouvrir le GUI du banquier à la même position
                 // 8) Ré-ouvrir le GUI du banquier à la même position
                 BlockPos reopenPos = depositMenu.getPos();
 
@@ -131,10 +133,8 @@ public class SubmitDepositMessage {
                                 return new BankerGuiMenu(windowId, inventory, buf);
                             }
                         },
-                        reopenPos
+                        buf -> buf.writeBlockPos(reopenPos)
                 );
-
-
 
                 // 9) Confirmation en chat
                 sender.sendSystemMessage(

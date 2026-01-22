@@ -122,6 +122,12 @@ public class SubmitWithdrawMessage {
                     PacketDistributor.PLAYER.with(() -> player),
                     new MoneyUpdateMessage(uuidString, newBalance)
             );
+            
+            // 5b) Envoyer le PlayerModel complet pour mettre à jour le cache client global
+            MedievalCoin.PACKET_HANDLER.send(
+                    PacketDistributor.PLAYER.with(() -> player),
+                    new PlayerStatsUpdateMessage(pm)
+            );
 
             // --- 6) Message de succès ---
             player.sendSystemMessage(
