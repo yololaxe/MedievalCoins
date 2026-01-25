@@ -1,16 +1,10 @@
 // src/main/java/fr/renblood/medievalcoins/MedievalCoin.java
 package fr.renblood.medievalcoins;
 
-import fr.renblood.medievalcoins.client.renderer.BankerRenderer;
 import fr.renblood.medievalcoins.creative.CreativeTab;
 import fr.renblood.medievalcoins.init.BlockInit;
 import fr.renblood.medievalcoins.init.ItemInit;
 import fr.renblood.medievalcoins.init.MedievalCoinsModMenus;
-import fr.renblood.medievalcoins.inventory.banker.BankerGuiScreen;
-import fr.renblood.medievalcoins.inventory.banker.ChangeGUIScreen;
-import fr.renblood.medievalcoins.inventory.banker.DepositGuiScreen;
-import fr.renblood.medievalcoins.inventory.banker.WithdrawGuiScreen;
-import fr.renblood.medievalcoins.inventory.purse.PurseScreen;
 import fr.renblood.medievalcoins.item.Coins;
 import fr.renblood.medievalcoins.network.*;
 import fr.renblood.medievalcoins.procedures.OpenDepositGuiMessage;
@@ -19,8 +13,6 @@ import fr.renblood.medievalcoins.procedures.OpenWithdrawGuiMessage;
 import fr.renblood.medievalcoins.tree.network.FertilizeStateMessage;
 import fr.renblood.medievalcoins.tree.network.FertilizerSlotMessage;
 import fr.renblood.medievalcoins.tree.network.SpecialSlotKeyMessage;
-import net.minecraft.client.gui.screens.MenuScreens;
-import net.minecraft.client.renderer.entity.EntityRenderers;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
 
@@ -41,7 +33,6 @@ import org.apache.logging.log4j.Logger;
 import java.util.*;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
-import static fr.renblood.medievalcoins.init.EntityInit.BANKER;
 import static fr.renblood.medievalcoins.init.EntityInit.ENTITY_TYPES;
 
 @Mod(MedievalCoin.MODID)
@@ -81,18 +72,7 @@ public class MedievalCoin {
     }
 
     private void commonSetup(final FMLCommonSetupEvent event) {
-        event.enqueueWork(() -> {
-            // 5) Register des écrans côté client
-            LOGGER.info("[MedievalCoins] Enregistrement des écrans client");
-            MenuScreens.register(MedievalCoinsModMenus.BANKER_GUI.get(),  BankerGuiScreen::new);
-            MenuScreens.register(MedievalCoinsModMenus.CHANGE_GUI.get(),  ChangeGUIScreen::new);
-            MenuScreens.register(MedievalCoinsModMenus.DEPOSIT_MENU.get(), DepositGuiScreen::new);
-            MenuScreens.register(MedievalCoinsModMenus.PURSE_CONTAINER.get(), PurseScreen::new);
-            MenuScreens.register(MedievalCoinsModMenus.WITHDRAW_MENU.get(), WithdrawGuiScreen::new);
-
-            // 6) Renderer de l'entité banquier
-            EntityRenderers.register(BANKER.get(), BankerRenderer::new);
-        });
+        // Plus rien de client-side ici !
     }
 
     private void registerNetworkMessages() {

@@ -20,14 +20,19 @@ import static fr.renblood.medievalcoins.init.MedievalCoinsModMenus.PURSE_CONTAIN
 
 public class PurseContainer extends AbstractContainerMenu {
     private final SimpleContainer container;
-
-
+    private final ItemStack purseStack; // On garde une référence à la stack pour vérifier sa validité
 
     public PurseContainer(int id, Inventory playerInventory, ItemStack purseStack) {
         super(PURSE_CONTAINER.get(), id);
+        this.purseStack = purseStack;
 
-        Purse purseItem = (Purse) purseStack.getItem();
-        this.container = purseItem.getInventory(purseStack); // Utiliser `this.container` pour initialiser correctement la variable membre
+        // Sécurité : si l'item n'est pas une Purse, on crée un container vide pour éviter le crash
+        // et stillValid renverra false pour fermer le GUI
+        if (purseStack.getItem() instanceof Purse purseItem) {
+            this.container = purseItem.getInventory(purseStack);
+        } else {
+            this.container = new SimpleContainer(9);
+        }
 
         Set<Item> allowedItems = new HashSet<>();
         allowedItems.add(Coins.GOLD_COIN.get());
@@ -36,8 +41,8 @@ public class PurseContainer extends AbstractContainerMenu {
         allowedItems.add(Coins.IRON_COIN.get());
 
         // Slots du Purse en 3x3
-        int startX = 62; // Position horizontale initiale pour centrer la grille
-        int startY = 17; // Position verticale initiale pour centrer la grille
+        int startX = 62;
+        int startY = 17;
 
         for (int row = 0; row < 3; ++row) {
             for (int col = 0; col < 3; ++col) {
@@ -45,14 +50,14 @@ public class PurseContainer extends AbstractContainerMenu {
             }
         }
 
-        // Slots de l'inventaire du joueur (inchangé)
+        // Slots de l'inventaire du joueur
         for (int row = 0; row < 3; ++row) {
             for (int col = 0; col < 9; ++col) {
                 this.addSlot(new Slot(playerInventory, col + row * 9 + 9, 8 + col * 18, 84 + row * 18));
             }
         }
 
-        // Slots de la barre d'action du joueur (inchangé)
+        // Slots de la barre d'action du joueur
         for (int col = 0; col < 9; ++col) {
             this.addSlot(new Slot(playerInventory, col, 8 + col * 18, 142));
         }
@@ -62,9 +67,12 @@ public class PurseContainer extends AbstractContainerMenu {
     public void removed(Player player) {
         super.removed(player);
         if (!player.level().isClientSide) {
-            ItemStack purseStack = player.getMainHandItem(); // ou l'endroit où vous avez stocké le purse
-            Purse purseItem = (Purse) purseStack.getItem();
-            purseItem.saveInventory(purseStack, this.container);
+            // On vérifie que l'item est toujours une Purse avant de sauvegarder
+            // On utilise la stack passée au constructeur, mais on vérifie si elle est toujours valide
+            // Si le joueur a déplacé la bourse, il faut la retrouver ou utiliser la référence si elle est toujours valide
+            if (this.purseStack.getItem() instanceof Purse purseItem) {
+                purseItem.saveInventory(this.purseStack, this.container);
+            }
         }
     }
 
@@ -73,10 +81,12 @@ public class PurseContainer extends AbstractContainerMenu {
         return new PurseContainer(windowId, playerInv, purseStack);
     }
 
-
     @Override
     public boolean stillValid(Player player) {
-        return true;
+        // Vérifie si le joueur tient toujours la bourse (main principale ou secondaire)
+        // Ou si la stack passée au constructeur est toujours valide et dans l'inventaire
+        // Pour simplifier et éviter les crashs lors du swap de main :
+        return !this.purseStack.isEmpty() && this.purseStack.getItem() instanceof Purse;
     }
 
     @Override
@@ -119,6 +129,4 @@ public class PurseContainer extends AbstractContainerMenu {
 
         return originalStack;
     }
-
-
 }
