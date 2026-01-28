@@ -4,15 +4,18 @@ import fr.renblood.medievalcoins.MedievalCoin;
 import fr.renblood.medievalcoins.client.model.PlayerModel;
 import fr.renblood.medievalcoins.network.ApiClient;
 import fr.renblood.medievalcoins.network.PlayerCache;
+import fr.renblood.medievalcoins.network.PlayerStatsUpdateMessage;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.ai.attributes.AttributeInstance;
 import net.minecraft.world.entity.ai.attributes.AttributeModifier;
 import net.minecraft.world.entity.ai.attributes.Attributes;
+import net.minecraft.world.entity.player.Player;
 import net.minecraftforge.common.ForgeMod;
 import net.minecraftforge.event.TickEvent;
 import net.minecraftforge.event.entity.player.PlayerEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
+import net.minecraftforge.network.PacketDistributor;
 
 import java.util.UUID;
 
@@ -48,6 +51,11 @@ public class PlayerStatsHandler {
             PlayerModel pm = PlayerCache.getPlayer(uuid);
             if (pm != null) {
                 applyStats(player, pm);
+                // IMPORTANT : On renvoie les stats au client pour s'assurer que son cache est à jour (inventaire, etc.)
+                MedievalCoin.PACKET_HANDLER.send(
+                        PacketDistributor.PLAYER.with(() -> player),
+                        new PlayerStatsUpdateMessage(pm)
+                );
             } else {
                 refreshPlayerStats(player);
             }
@@ -94,15 +102,15 @@ public class PlayerStatsHandler {
     // Gestion de la vitesse de minage (Dig Speed)
     @SubscribeEvent
     public static void onBreakSpeed(PlayerEvent.BreakSpeed event) {
-        if (event.getEntity() instanceof ServerPlayer player) {
-            String uuid = player.getGameProfile().getId().toString();
-            PlayerModel pm = PlayerCache.getPlayer(uuid);
-            if (pm != null) {
-                // Base = 100. Si haste = 78, vitesse = 78% de la normale.
-                // Si haste = 120, vitesse = 120% de la normale.
-                float multiplier = pm.haste / 100.0f;
-                event.setNewSpeed(event.getOriginalSpeed() * multiplier);
-            }
+        // Correction : on applique aussi côté client pour que l'animation soit synchro
+        Player player = event.getEntity();
+        String uuid = player.getGameProfile().getId().toString();
+        PlayerModel pm = PlayerCache.getPlayer(uuid);
+        if (pm != null) {
+            // Base = 100. Si haste = 78, vitesse = 78% de la normale.
+            // Si haste = 120, vitesse = 120% de la normale.
+            float multiplier = pm.haste / 100.0f;
+            event.setNewSpeed(event.getOriginalSpeed() * multiplier);
         }
     }
 
@@ -116,6 +124,12 @@ public class PlayerStatsHandler {
                     PlayerCache.updatePlayer(pm);
                     // On applique les stats sur le thread serveur principal
                     player.server.execute(() -> applyStats(player, pm));
+                    
+                    // IMPORTANT : On envoie aussi au client pour qu'il mette à jour son cache (pour BreakSpeed client-side)
+                    MedievalCoin.PACKET_HANDLER.send(
+                        PacketDistributor.PLAYER.with(() -> player),
+                        new PlayerStatsUpdateMessage(pm)
+                    );
                 }
             } catch (Exception e) {
                 MedievalCoin.LOGGER.error("Failed to refresh stats for " + player.getName().getString(), e);

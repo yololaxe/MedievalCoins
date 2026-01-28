@@ -4,6 +4,7 @@ import com.google.gson.JsonObject;
 import fr.renblood.medievalcoins.MedievalCoin;
 import fr.renblood.medievalcoins.client.model.PlayerModel;
 import fr.renblood.medievalcoins.network.ApiClient;
+import fr.renblood.medievalcoins.network.PlayerCache;
 import fr.renblood.medievalcoins.network.PlayerStatsUpdateMessage;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerPlayer;
@@ -44,7 +45,33 @@ public class MedievalCoinsAPI {
         new Thread(() -> {
             try {
                 String uuid = player.getGameProfile().getId().toString();
-                JsonObject response = ApiClient.manageJobXp(uuid, action, job, amount);
+                
+                // Calcul du bonus d'XP basé sur la compétence "skill"
+                // Uniquement pour l'ajout d'XP
+                int finalAmount = amount;
+                if ("add".equalsIgnoreCase(action)) {
+                    PlayerModel pm = PlayerCache.getPlayer(uuid);
+                    if (pm == null) {
+                        pm = ApiClient.getPlayer(uuid);
+                        if (pm != null) PlayerCache.updatePlayer(pm);
+                    }
+                    
+                    if (pm != null) {
+                        // Base 100. Si skill = 110 -> +10% -> x1.10
+                        double multiplier = pm.skill / 100.0;
+                        // Sécurité pour éviter un multiplicateur nul ou négatif si skill est buggé
+                        if (multiplier < 0.0) multiplier = 1.0;
+                        
+                        finalAmount = (int) (amount * multiplier);
+                        
+                        if (MedievalCoin.DEBUG_MODE && finalAmount != amount) {
+                            MedievalCoin.LOGGER.info("XP Bonus applied for {}: Base={}, Skill={}, Final={}", 
+                                    player.getName().getString(), amount, pm.skill, finalAmount);
+                        }
+                    }
+                }
+
+                JsonObject response = ApiClient.manageJobXp(uuid, action, job, finalAmount);
 
                 String jobName = response.get("job").getAsString();
                 int newXp = response.get("new_xp").getAsInt();
@@ -53,6 +80,9 @@ public class MedievalCoinsAPI {
                 // On récupère le PlayerModel complet mis à jour pour le client
                 PlayerModel updatedPlayerModel = ApiClient.getPlayer(uuid);
                 
+                // Variable finale pour la lambda
+                int displayAmount = finalAmount;
+
                 player.getServer().execute(() -> {
                     // Envoie le PlayerModel complet au client pour synchro
                     MedievalCoin.PACKET_HANDLER.send(PacketDistributor.PLAYER.with(() -> player), new PlayerStatsUpdateMessage(updatedPlayerModel));
@@ -61,7 +91,7 @@ public class MedievalCoinsAPI {
                     String sign = action.equals("remove") ? "-" : (action.equals("add") ? "+" : "=");
                     String color = action.equals("remove") ? "§c" : "§a"; // Rouge si remove, Vert sinon
                     
-                    String amountStr = action.equals("set") ? String.valueOf(amount) : sign + amount;
+                    String amountStr = action.equals("set") ? String.valueOf(displayAmount) : sign + displayAmount;
 
                     player.sendSystemMessage(Component.literal(
                             String.format("%s%s XP §6%s §7(Total: §b%d §7- Niveau §e%d§7)", 

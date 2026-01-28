@@ -19,10 +19,6 @@ public class DepositGuiScreen extends AbstractContainerScreen<DepositGuiMenu> {
             new ResourceLocation(MedievalCoin.MODID, "textures/gui/deposit_gui.png");
     // Position et espacement repris du menu
     private static final int SLOT_START_X = 51, SLOT_SPACING = 36, SLOT_Y = 72;
-    private static final Function<Integer, ItemStack> GET_BALANCE_STACK = idx -> {
-        var p = Coins.IRON_COIN; // juste placeholder
-        return ItemStack.EMPTY;
-    };
 
     public DepositGuiScreen(DepositGuiMenu menu, Inventory inv, Component title) {
         super(menu, inv, title);
@@ -83,6 +79,20 @@ public class DepositGuiScreen extends AbstractContainerScreen<DepositGuiMenu> {
                         Component.translatable("gui.medieval_coins.banker_gui.deposit_submit"),
                         btn -> {
                             var inv = menu.getDepositInv();
+                            // Vérification client-side pour éviter d'envoyer un paquet inutile
+                            boolean empty = true;
+                            for(int i=0; i<4; i++) {
+                                if(!inv.getItem(i).isEmpty()) {
+                                    empty = false;
+                                    break;
+                                }
+                            }
+                            
+                            if (empty) {
+                                // Optionnel : jouer un son d'erreur ou afficher un message
+                                return;
+                            }
+
                             MedievalCoin.PACKET_HANDLER.sendToServer(new SubmitDepositMessage(
                                     menu.getPos(),
                                     inv.getItem(0),

@@ -73,15 +73,28 @@ public class SubmitDepositMessage {
             int silverCount = inv.getItem(2).getCount();
             int goldCount   = inv.getItem(3).getCount();
 
-            // 3) Conversion en "cuivre"
-            final int PER_IRON   = 1;
-            final int PER_BRONZE = 64 * PER_IRON;
-            final int PER_SILVER = 64 * PER_BRONZE;
-            final int PER_GOLD   = 64 * PER_SILVER;
-            int totalCopper = ironCount * PER_IRON
+            // Vérification si le dépôt est vide
+            if (ironCount == 0 && bronzeCount == 0 && silverCount == 0 && goldCount == 0) {
+                sender.sendSystemMessage(Component.translatable("chat.medieval_coins.deposit_empty"));
+                return;
+            }
+
+            // 3) Conversion en "fer" (unité de base)
+            // 64 Fer = 1 Bronze
+            // 64 Bronze = 1 Argent
+            // 64 Argent = 1 Or
+            final long PER_IRON   = 1;
+            final long PER_BRONZE = 64 * PER_IRON;
+            final long PER_SILVER = 64 * PER_BRONZE;
+            final long PER_GOLD   = 64 * PER_SILVER;
+            
+            long totalValueLong = ironCount * PER_IRON
                     + bronzeCount * PER_BRONZE
                     + silverCount * PER_SILVER
                     + goldCount * PER_GOLD;
+            
+            // On cast en int car l'API semble utiliser des int, attention aux dépassements si les montants sont énormes
+            int totalValue = (int) totalValueLong;
 
             // 4) Vider les slots de dépôt
             for (int i = 0; i < 4; i++) {
@@ -98,7 +111,7 @@ public class SubmitDepositMessage {
                 }
 
                 // 6) Appel API pour déposer et récupérer le nouveau solde
-                int newBalance = ApiClient.deposit(pm.id_minecraft, totalCopper);
+                int newBalance = ApiClient.deposit(pm.id_minecraft, totalValue);
                 pm.money        = newBalance;
                 PlayerCache.updatePlayer(pm);
 
@@ -138,12 +151,12 @@ public class SubmitDepositMessage {
 
                 // 9) Confirmation en chat
                 sender.sendSystemMessage(
-                        Component.translatable("chat.medieval_coins.deposit_success", totalCopper)
+                        Component.translatable("chat.medieval_coins.deposit_success", totalValue)
                 );
 
                 MedievalCoin.LOGGER.info(
-                        "Deposit of {} copper for {} succeeded, new balance = {}",
-                        totalCopper, mcUuid, newBalance
+                        "Deposit of {} value for {} succeeded, new balance = {}",
+                        totalValue, mcUuid, newBalance
                 );
             } catch (Exception e) {
                 MedievalCoin.LOGGER.error(

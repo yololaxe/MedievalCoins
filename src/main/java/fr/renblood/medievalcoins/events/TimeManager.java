@@ -112,7 +112,9 @@ public class TimeManager {
                 player.sendSystemMessage(Component.literal("§aVous vous réveillez en pleine forme !"));
             } else {
                 // Joueur qui n'a pas dormi : Malus Lenteur
-                player.addEffect(new MobEffectInstance(MobEffects.MOVEMENT_SLOWDOWN, malusDuration, 0));
+                // On utilise le constructeur (effect, duration, amplifier, ambient, visible)
+                // visible = false désactive les particules
+                player.addEffect(new MobEffectInstance(MobEffects.MOVEMENT_SLOWDOWN, malusDuration, 0, false, false));
                 player.sendSystemMessage(Component.literal("§cVous n'avez pas dormi... La fatigue vous pèse."));
             }
         }

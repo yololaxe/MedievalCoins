@@ -103,9 +103,24 @@ public class SubmitWithdrawMessage {
                     return;
                 }
             }
+            
+            // Calcul du coût total en unité de base (Fer)
+            // 0=Fer(1), 1=Bronze(64), 2=Argent(4096), 3=Or(262144)
+            long unitCost = switch (msg.coinType) {
+                case 0 -> 1L;
+                case 1 -> 64L;
+                case 2 -> 64L * 64L;
+                case 3 -> 64L * 64L * 64L;
+                default -> 0L;
+            };
+            long totalCostLong = unitCost * msg.amount;
+            int totalCost = (int) totalCostLong; // Attention overflow si montant énorme
+
             int newBalance;
             try {
-                newBalance = ApiClient.withdraw(pm.id_minecraft, msg.coinType, msg.amount);
+                // On appelle withdraw avec coinType=0 (Fer) et le coût total calculé
+                // Cela permet de gérer la conversion côté mod sans dépendre du backend
+                newBalance = ApiClient.withdraw(pm.id_minecraft, 0, totalCost);
             } catch (Exception e) {
                 MedievalCoin.LOGGER.error("API withdraw failed", e);
                 player.sendSystemMessage(Component.translatable("chat.medieval_coins.withdraw_error"));
@@ -133,8 +148,8 @@ public class SubmitWithdrawMessage {
             player.sendSystemMessage(
                     Component.translatable("chat.medieval_coins.withdraw_success", msg.amount)
             );
-            MedievalCoin.LOGGER.info("Withdraw {}×type{} for {} → new balance {}",
-                    msg.amount, msg.coinType, uuidString, newBalance
+            MedievalCoin.LOGGER.info("Withdraw {}×type{} (cost {}) for {} → new balance {}",
+                    msg.amount, msg.coinType, totalCost, uuidString, newBalance
             );
         });
         ctx.setPacketHandled(true);

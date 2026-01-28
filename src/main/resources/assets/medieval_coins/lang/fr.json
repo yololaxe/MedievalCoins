@@ -26,7 +26,8 @@
   "chat.medieval_coins.withdraw_success": "Retrait de %s pièce(s) réussi",
   "chat.medieval_coins.withdraw_error": "Erreur lors du retrait",
 
-  "chat.medieval_coins.deposit_success": "Dépôt de %s unités de cuivre réussi",
+  "chat.medieval_coins.deposit_success": "Dépôt de %s unités de fer réussi",
+  "chat.medieval_coins.deposit_empty": "Vous n'avez rien déposé",
 
   "gui.medieval_coins.banker_gui.label_12_bronze_1208": "+12 Bronze 12/08",
   "gui.medieval_coins.banker_gui.label_empty": "-1 Argent 11/08",

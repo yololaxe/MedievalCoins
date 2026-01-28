@@ -1,4 +1,3 @@
-// src/main/java/fr/renblood/medievalcoins/MedievalCoin.java
 package fr.renblood.medievalcoins;
 
 import fr.renblood.medievalcoins.creative.CreativeTab;
@@ -15,9 +14,11 @@ import fr.renblood.medievalcoins.tree.network.FertilizerSlotMessage;
 import fr.renblood.medievalcoins.tree.network.SpecialSlotKeyMessage;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.world.level.GameRules;
 
 import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.event.TickEvent;
+import net.minecraftforge.event.server.ServerStartingEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.fml.event.lifecycle.FMLCommonSetupEvent;
@@ -203,6 +204,11 @@ public class MedievalCoin {
     public static void queueServerWork(int tick, Runnable action) {
         if (Thread.currentThread().getThreadGroup().getName().contains("Server"))
             workQueue.add(new AbstractMap.SimpleEntry<>(action, tick));
+    }
+
+    @SubscribeEvent
+    public void onServerStarting(ServerStartingEvent event) {
+        event.getServer().getGameRules().getRule(GameRules.RULE_NATURAL_REGENERATION).set(false, event.getServer());
     }
 
     @SubscribeEvent

@@ -26,7 +26,8 @@
   "chat.medieval_coins.withdraw_success": "Withdrawn %s piece(s) successfully",
   "chat.medieval_coins.withdraw_error": "Error during withdrawal",
 
-  "chat.medieval_coins.deposit_success": "Deposited %s copper successfully",
+  "chat.medieval_coins.deposit_success": "Deposited %s iron successfully",
+  "chat.medieval_coins.deposit_empty": "You deposited nothing",
 
   "gui.medieval_coins.banker_gui.label_12_bronze_1208": "+12 Bronze 12/08",
   "gui.medieval_coins.banker_gui.label_empty": "-1 Silver 11/08",

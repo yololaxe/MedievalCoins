@@ -5,18 +5,19 @@ import fr.renblood.medievalcoins.MedievalCoin;
 import fr.renblood.medievalcoins.client.model.PlayerModel;
 import fr.renblood.medievalcoins.network.PlayerCache;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.screens.inventory.InventoryScreen;
+import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.inventory.ClickType;
 import net.minecraft.world.inventory.Slot;
 import net.minecraft.world.item.ItemStack;
 import net.minecraftforge.api.distmarker.Dist;
-import net.minecraftforge.api.distmarker.OnlyIn;
 import net.minecraftforge.client.event.ContainerScreenEvent;
 import net.minecraftforge.client.event.RenderTooltipEvent;
 import net.minecraftforge.client.event.ScreenEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
+import org.lwjgl.glfw.GLFW;
 
 @Mod.EventBusSubscriber(modid = MedievalCoin.MODID, value = Dist.CLIENT)
 public class ClientInventoryEvents {
@@ -25,7 +26,6 @@ public class ClientInventoryEvents {
 
     @SubscribeEvent
     public static void onRenderContainer(ContainerScreenEvent.Render.Foreground event) {
-        if (!(event.getContainerScreen() instanceof InventoryScreen)) return;
         Player player = Minecraft.getInstance().player;
         if (player == null) return;
 
@@ -56,7 +56,7 @@ public class ClientInventoryEvents {
 
     @SubscribeEvent
     public static void onRenderTooltip(RenderTooltipEvent.Pre event) {
-        if (!(Minecraft.getInstance().screen instanceof InventoryScreen screen)) return;
+        if (!(Minecraft.getInstance().screen instanceof AbstractContainerScreen<?> screen)) return;
         if (isLockedSlot(screen.getSlotUnderMouse())) {
             event.setCanceled(true);
         }
@@ -64,7 +64,7 @@ public class ClientInventoryEvents {
 
     @SubscribeEvent
     public static void onMouseClick(ScreenEvent.MouseButtonPressed.Pre event) {
-        if (!(event.getScreen() instanceof InventoryScreen screen)) return;
+        if (!(event.getScreen() instanceof AbstractContainerScreen<?> screen)) return;
         Slot slot = screen.getSlotUnderMouse();
         
         if (isLockedSlot(slot)) {
@@ -112,7 +112,7 @@ public class ClientInventoryEvents {
     
     @SubscribeEvent
     public static void onMouseDrag(ScreenEvent.MouseDragged.Pre event) {
-        if (!(event.getScreen() instanceof InventoryScreen screen)) return;
+        if (!(event.getScreen() instanceof AbstractContainerScreen<?> screen)) return;
         if (isLockedSlot(screen.getSlotUnderMouse())) {
             event.setCanceled(true);
         }
@@ -120,7 +120,9 @@ public class ClientInventoryEvents {
     
     @SubscribeEvent
     public static void onMouseRelease(ScreenEvent.MouseButtonReleased.Pre event) {
-        if (!(event.getScreen() instanceof InventoryScreen screen)) return;
+        if (!(event.getScreen() instanceof AbstractContainerScreen<?> screen)) return;
+        
+        // Vérifie si le slot sous la souris au moment du relâchement est verrouillé
         if (isLockedSlot(screen.getSlotUnderMouse())) {
             event.setCanceled(true);
         }
@@ -128,7 +130,13 @@ public class ClientInventoryEvents {
 
     @SubscribeEvent
     public static void onKeyPress(ScreenEvent.KeyPressed.Pre event) {
-        if (!(event.getScreen() instanceof InventoryScreen screen)) return;
+        if (!(event.getScreen() instanceof AbstractContainerScreen<?> screen)) return;
+
+        // Autorise la fermeture de l'inventaire avec la touche d'inventaire ou Échap
+        if (Minecraft.getInstance().options.keyInventory.matches(event.getKeyCode(), event.getScanCode()) || event.getKeyCode() == GLFW.GLFW_KEY_ESCAPE) {
+            return;
+        }
+
         if (isLockedSlot(screen.getSlotUnderMouse())) {
             event.setCanceled(true);
         }
