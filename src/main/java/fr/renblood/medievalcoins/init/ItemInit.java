@@ -25,7 +25,7 @@ public class ItemInit {
     public static final RegistryObject<Item> MAGIC_TORCH = REGISTRY.register("magic_torch",
             () -> new BlockItem(BlockInit.MAGIC_TORCH.get(), new Item.Properties()));
             
-    // Pas besoin d'item pour la wall torch, elle est posée via le blockstate de la torche normale ou via logique custom
+    // Item de verrouillage supprimé
 
     // Méthode utilitaire pour enregistrer un BlockItem
     private static RegistryObject<Item> block(RegistryObject<Block> block) {

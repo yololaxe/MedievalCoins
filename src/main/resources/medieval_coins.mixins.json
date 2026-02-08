@@ -1,0 +1,16 @@
+{
+  "required": true,
+  "minVersion": "0.8",
+  "package": "fr.renblood.medievalcoins.mixin",
+  "compatibilityLevel": "JAVA_17",
+  "refmap": "medieval_coins.refmap.json",
+  "mixins": [
+    "SlotMixin"
+  ],
+  "client": [
+    "AbstractContainerScreenMixin"
+  ],
+  "injectors": {
+    "defaultRequire": 1
+  }
+}

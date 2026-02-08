@@ -11,27 +11,29 @@ import java.util.function.Supplier;
 
 public class StoGProcedure {
 	public static void execute(Entity entity) {
-		if (entity == null)
-			return;
-		if (new Object() {
-			public int getAmount(int sltid) {
-				if (entity instanceof Player _player && _player.containerMenu instanceof Supplier _current && _current.get() instanceof Map _slots) {
-					ItemStack stack = ((Slot) _slots.get(sltid)).getItem();
-					if (stack != null)
-						return stack.getCount();
+		if (entity == null) return;
+
+		if (entity instanceof Player player && player.containerMenu instanceof Supplier supplier && supplier.get() instanceof Map slots) {
+			Slot inputSlot = (Slot) slots.get(2);
+			Slot outputSlot = (Slot) slots.get(5);
+
+			if (inputSlot != null && outputSlot != null) {
+				ItemStack inputStack = inputSlot.getItem();
+				
+				if (inputStack.getCount() >= 64) {
+					inputStack.shrink(64);
+					inputSlot.set(inputStack);
+
+					ItemStack outputStack = outputSlot.getItem();
+					if (outputStack.isEmpty()) {
+						outputSlot.set(new ItemStack(Coins.GOLD_COIN.get(), 1));
+					} else if (outputStack.getItem() == Coins.GOLD_COIN.get()) {
+						outputStack.grow(1);
+						outputSlot.set(outputStack);
+					}
+					
+					player.containerMenu.broadcastChanges();
 				}
-				return 0;
-			}
-		}.getAmount(2) == 64) {
-			if (entity instanceof Player _player && _player.containerMenu instanceof Supplier _current && _current.get() instanceof Map _slots) {
-				((Slot) _slots.get(2)).set(ItemStack.EMPTY);
-				_player.containerMenu.broadcastChanges();
-			}
-			if (entity instanceof Player _player && _player.containerMenu instanceof Supplier _current && _current.get() instanceof Map _slots) {
-				ItemStack _setstack = new ItemStack(Coins.GOLD_COIN.get()).copy();
-				_setstack.setCount(1);
-				((Slot) _slots.get(5)).set(_setstack);
-				_player.containerMenu.broadcastChanges();
 			}
 		}
 	}

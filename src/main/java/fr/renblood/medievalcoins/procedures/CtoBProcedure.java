@@ -11,27 +11,33 @@ import java.util.function.Supplier;
 
 public class CtoBProcedure {
 	public static void execute(Entity entity) {
-		if (entity == null)
-			return;
-		if (new Object() {
-			public int getAmount(int sltid) {
-				if (entity instanceof Player _player && _player.containerMenu instanceof Supplier _current && _current.get() instanceof Map _slots) {
-					ItemStack stack = ((Slot) _slots.get(sltid)).getItem();
-					if (stack != null)
-						return stack.getCount();
+		if (entity == null) return;
+
+		if (entity instanceof Player player && player.containerMenu instanceof Supplier supplier && supplier.get() instanceof Map slots) {
+			Slot inputSlot = (Slot) slots.get(0);
+			Slot outputSlot = (Slot) slots.get(3);
+
+			if (inputSlot != null && outputSlot != null) {
+				ItemStack inputStack = inputSlot.getItem();
+				
+				// Vérifie si on a au moins 64 items dans le slot d'entrée
+				if (inputStack.getCount() >= 64) {
+					// Retire 64 items du slot d'entrée
+					inputStack.shrink(64);
+					inputSlot.set(inputStack); // Met à jour le slot (si vide, shrink le gère)
+
+					// Ajoute 1 item au slot de sortie
+					ItemStack outputStack = outputSlot.getItem();
+					if (outputStack.isEmpty()) {
+						outputSlot.set(new ItemStack(Coins.BRONZE_COIN.get(), 1));
+					} else if (outputStack.getItem() == Coins.BRONZE_COIN.get()) {
+						// Si le slot contient déjà du bronze, on incrémente
+						outputStack.grow(1);
+						outputSlot.set(outputStack); // Met à jour le slot
+					}
+					
+					player.containerMenu.broadcastChanges();
 				}
-				return 0;
-			}
-		}.getAmount(0) == 64) {
-			if (entity instanceof Player _player && _player.containerMenu instanceof Supplier _current && _current.get() instanceof Map _slots) {
-				((Slot) _slots.get(0)).set(ItemStack.EMPTY);
-				_player.containerMenu.broadcastChanges();
-			}
-			if (entity instanceof Player _player && _player.containerMenu instanceof Supplier _current && _current.get() instanceof Map _slots) {
-				ItemStack _setstack = new ItemStack(Coins.BRONZE_COIN.get()).copy();
-				_setstack.setCount(1);
-				((Slot) _slots.get(3)).set(_setstack);
-				_player.containerMenu.broadcastChanges();
 			}
 		}
 	}

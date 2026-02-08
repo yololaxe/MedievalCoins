@@ -6,6 +6,7 @@ import fr.renblood.medievalcoins.init.BlockInit;
 import fr.renblood.medievalcoins.tree.capability.SpecialSlotCapabilityHandler;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
@@ -74,17 +75,18 @@ public class FertilizeHudOverlay {
         // Affiche le texte du mode actif
         mc.player.getCapability(SpecialSlotCapabilityHandler.SPECIAL_SLOT_CAP).ifPresent(inv -> {
             ItemStack stack = inv.getStackInSlot(0);
-            String text = "Special Mode ON";
+            String textKey = "hud.medieval_coins.mode_special";
             int color = 0xFFFFFF;
             
             if (stack.getItem() == Items.BONE_MEAL) {
-                text = "🌱 Fertilizer Mode ON";
+                textKey = "hud.medieval_coins.mode_fertilize";
                 color = 0x00FF00;
             } else if (stack.getItem().toString().contains("torch")) {
-                text = "🔥 Torch Mode ON";
+                textKey = "hud.medieval_coins.mode_torch";
                 color = 0xFFA500;
             }
             
+            String text = Component.translatable(textKey).getString();
             gui.drawString(mc.font, text, screenWidth / 2 - 40, screenHeight - 70, color, true);
         });
     }

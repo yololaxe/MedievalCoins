@@ -41,7 +41,7 @@ public class BankDashboardBlock extends HorizontalDirectionalBlock {
 
     public BankDashboardBlock() {
         super(Properties.of()
-                .sound(SoundType.GRAVEL)
+                .sound(SoundType.WOOD) // Changé de GRAVEL à WOOD
                 .strength(2.0F, 6.0F)
                 .noOcclusion()
                 .isRedstoneConductor((bs, br, bp) -> false)
