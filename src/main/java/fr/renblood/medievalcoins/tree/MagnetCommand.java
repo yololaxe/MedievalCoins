@@ -1,6 +1,7 @@
 package fr.renblood.medievalcoins.tree;
 
 import com.mojang.brigadier.CommandDispatcher;
+import com.mojang.brigadier.arguments.DoubleArgumentType;
 import fr.renblood.medievalcoins.MedievalCoin;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.commands.Commands;
@@ -21,8 +22,9 @@ public class MagnetCommand {
 
     private static final Set<UUID> activePlayers = new HashSet<>();
     private static final Map<UUID, Long> lastCommandTime = new HashMap<>();
+    private static final Map<UUID, Double> playerRanges = new HashMap<>(); // Stocke la portée préférée
     private static final long COOLDOWN_MS = 3000; // 3 secondes
-    private static final double RANGE = 3.0;
+    private static final double DEFAULT_RANGE = 3.0;
 
     @SubscribeEvent
     public static void onRegisterCommands(RegisterCommandsEvent evt) {
@@ -30,31 +32,71 @@ public class MagnetCommand {
 
         d.register(Commands.literal("magnet")
                 .requires(src -> src.hasPermission(0))
-                .executes(c -> {
-                    if (isOnCooldown(c.getSource())) return 0;
+                .executes(c -> toggleMagnet(c.getSource(), -1)) // -1 signifie "utiliser la valeur par défaut/stockée"
+                .then(Commands.argument("range", DoubleArgumentType.doubleArg(2.0, 8.0))
+                        .executes(c -> toggleMagnet(c.getSource(), DoubleArgumentType.getDouble(c, "range")))
+                )
+        );
+    }
 
-                    CommandSourceStack src = c.getSource();
-                    if (!(src.getEntity() instanceof ServerPlayer player)) {
-                        src.sendFailure(Component.literal("❌ Cette commande doit être exécutée en jeu."));
-                        return 0;
-                    }
+    private static int toggleMagnet(CommandSourceStack src, double rangeArg) {
+        if (isOnCooldown(src)) return 0;
 
-                    // Vérifie les permissions métier
-                    if (!TreePermissionChecker.hasUnlocked(player, TreeAbility.MAGNET)) {
-                        src.sendFailure(Component.literal("❌ Vous devez améliorer votre métier de charpentier."));
-                        return 0;
-                    }
+        if (!(src.getEntity() instanceof ServerPlayer player)) {
+            src.sendFailure(Component.literal("❌ Cette commande doit être exécutée en jeu."));
+            return 0;
+        }
 
-                    UUID id = player.getUUID();
-                    if (activePlayers.contains(id)) {
-                        activePlayers.remove(id);
-                        src.sendSuccess(() -> Component.literal("❌ Mode Magnet désactivé."), true);
-                    } else {
-                        activePlayers.add(id);
-                        src.sendSuccess(() -> Component.literal("✅ Mode Magnet activé."), true);
-                    }
-                    return 1;
-                }));
+        if (!TreePermissionChecker.hasUnlocked(player, TreeAbility.MAGNET)) {
+            src.sendFailure(Component.literal("❌ Vous devez améliorer votre métier de charpentier."));
+            return 0;
+        }
+
+        UUID id = player.getUUID();
+        
+        // Si une portée est spécifiée, on la met à jour
+        if (rangeArg != -1) {
+            playerRanges.put(id, rangeArg);
+        }
+
+        // Si le joueur n'a pas de portée définie, on met la défaut
+        if (!playerRanges.containsKey(id)) {
+            playerRanges.put(id, DEFAULT_RANGE);
+        }
+
+        double currentStoredRange = playerRanges.get(id);
+
+        if (activePlayers.contains(id)) {
+            // Le mode est ACTIF.
+            
+            // Cas 1 : Commande simple (/magnet) -> On désactive.
+            if (rangeArg == -1) {
+                activePlayers.remove(id);
+                src.sendSuccess(() -> Component.literal("❌ Mode Magnet désactivé."), true);
+            } 
+            // Cas 2 : Commande avec portée (/magnet 5).
+            else {
+                // Si la portée demandée est la même que celle active (ou stockée), on désactive (toggle).
+                // Note : Ici on compare avec la valeur qu'on vient de mettre dans la map, donc c'est toujours égal.
+                // Il faut savoir si la portée a CHANGÉ par rapport à avant l'appel.
+                // Mais comme on a déjà mis à jour la map au début...
+                
+                // Simplification :
+                // Si on spécifie une portée, on FORCE l'activation avec cette portée (mise à jour).
+                // Sauf si on veut que /magnet 5 désactive si on est déjà en magnet 5.
+                
+                // Logique "Toggle intelligent" :
+                // Si actif et range == -1 -> OFF
+                // Si actif et range != -1 -> UPDATE (reste ON avec nouvelle portée)
+                
+                src.sendSuccess(() -> Component.literal("✅ Mode Magnet mis à jour (Portée: " + currentStoredRange + " blocs)."), true);
+            }
+        } else {
+            // Le mode est INACTIF -> On active.
+            activePlayers.add(id);
+            src.sendSuccess(() -> Component.literal("✅ Mode Magnet activé (Portée: " + currentStoredRange + " blocs)."), true);
+        }
+        return 1;
     }
 
     @SubscribeEvent
@@ -62,23 +104,18 @@ public class MagnetCommand {
         if (event.phase != TickEvent.Phase.END || event.player.level().isClientSide) return;
         if (!activePlayers.contains(event.player.getUUID())) return;
 
-        // Logique Magnet
         ServerPlayer player = (ServerPlayer) event.player;
-        
-        // Si le joueur est mort ou déconnecté, on peut éventuellement le retirer de la liste,
-        // mais ici on laisse actif pour qu'il le retrouve au respawn s'il veut.
         if (player.isSpectator()) return;
 
-        AABB box = player.getBoundingBox().inflate(RANGE);
+        double range = playerRanges.getOrDefault(player.getUUID(), DEFAULT_RANGE);
+        AABB box = player.getBoundingBox().inflate(range);
         List<ItemEntity> items = player.level().getEntitiesOfClass(ItemEntity.class, box);
 
         for (ItemEntity item : items) {
             if (item.isAlive() && !item.hasPickUpDelay()) {
-                // Attire l'item vers le joueur
-                Vec3 playerPos = player.position().add(0, 0.5, 0); // un peu au-dessus des pieds
+                Vec3 playerPos = player.position().add(0, 0.5, 0);
                 Vec3 itemPos = item.position();
-                Vec3 direction = playerPos.subtract(itemPos).normalize().scale(0.5); // vitesse d'attraction
-                
+                Vec3 direction = playerPos.subtract(itemPos).normalize().scale(0.5);
                 item.setDeltaMovement(direction);
             }
         }
@@ -99,8 +136,8 @@ public class MagnetCommand {
         return false;
     }
 
-    // Méthode utilitaire pour le nettoyage à la déconnexion
     public static void removePlayer(UUID id) {
         activePlayers.remove(id);
+        playerRanges.remove(id);
     }
 }

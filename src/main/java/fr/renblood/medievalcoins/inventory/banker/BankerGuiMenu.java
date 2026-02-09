@@ -67,9 +67,20 @@ public class BankerGuiMenu extends AbstractContainerMenu implements Supplier<Map
 		if (slot != null && slot.hasItem()) {
 			ItemStack itemstack1 = slot.getItem();
 			itemstack = itemstack1.copy();
-			if (!this.moveItemStackTo(itemstack1, 0, this.slots.size(), true))
-				return ItemStack.EMPTY;
-			slot.onQuickCraft(itemstack1, itemstack);
+			
+			// Dans ce menu, il n'y a QUE l'inventaire du joueur (pas de slots de coffre).
+			// Donc le shift-click sert juste à déplacer entre Hotbar et Main Inventory.
+			
+			if (index < 27) { // Main Inventory (0-26) -> Hotbar (27-35)
+				if (!this.moveItemStackTo(itemstack1, 27, 36, false)) {
+					return ItemStack.EMPTY;
+				}
+			} else if (index < 36) { // Hotbar (27-35) -> Main Inventory (0-26)
+				if (!this.moveItemStackTo(itemstack1, 0, 27, false)) {
+					return ItemStack.EMPTY;
+				}
+			}
+
 			if (itemstack1.isEmpty())
 				slot.set(ItemStack.EMPTY);
 			else

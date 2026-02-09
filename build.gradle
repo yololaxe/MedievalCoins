@@ -99,6 +99,7 @@ tasks.withType(JavaCompile).configureEach {
 }
 
 tasks.named('jar', Jar).configure {
+    // Destination principale (Dossier Mods du Launcher)
     destinationDirectory = file('C:\\Users\\alban\\AppData\\Roaming\\ModrinthApp\\profiles\\Test Mods RP\\mods')
     
     duplicatesStrategy = DuplicatesStrategy.EXCLUDE
@@ -122,4 +123,16 @@ tasks.named('jar', Jar).configure {
     }
 
     finalizedBy 'reobfJar'
+    
+    // Copie vers la deuxième destination (MedievalStructures/libs)
+    doLast {
+        copy {
+            from archiveFile
+            into file('D:\\Projets\\Projet\\mods\\MedievalStructures\\MedievalStructures\\libs')
+        }
+    }
+}
+
+tasks.withType(JavaCompile).configureEach {
+    options.encoding = 'UTF-8'
 }
