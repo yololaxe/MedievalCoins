@@ -2,7 +2,7 @@ package fr.renblood.medievalcoins.mixin;
 
 import com.mojang.blaze3d.systems.RenderSystem;
 import fr.renblood.medievalcoins.MedievalCoin;
-import fr.renblood.medievalcoins.client.model.PlayerModel;
+import fr.renblood.medievalcoins.api.model.PlayerModel;
 import fr.renblood.medievalcoins.network.PlayerCache;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;

@@ -23,7 +23,7 @@ public class TimeCommand {
                         .executes(c -> {
                             double mult = DoubleArgumentType.getDouble(c, "multiplier");
                             TimeManager.dayLengthMultiplier = mult;
-                            
+
                             double totalMinutes = 20.0 * mult;
                             c.getSource().sendSuccess(() -> Component.literal(
                                     String.format("✅ Durée du jour définie à x%.1f (Total: %.1f minutes)", mult, totalMinutes)
@@ -32,7 +32,7 @@ public class TimeCommand {
                         })
                 )
         );
-        
+
         d.register(Commands.literal("sleep_percentage")
                 .requires(src -> src.hasPermission(2))
                 .then(Commands.argument("percentage", DoubleArgumentType.doubleArg(0.0, 100.0))

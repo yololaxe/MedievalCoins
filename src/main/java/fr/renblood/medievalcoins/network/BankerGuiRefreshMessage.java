@@ -1,7 +1,7 @@
 package fr.renblood.medievalcoins.network;
 
 import fr.renblood.medievalcoins.MedievalCoin;
-import fr.renblood.medievalcoins.client.model.PlayerModel;
+import fr.renblood.medievalcoins.api.model.PlayerModel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraftforge.network.NetworkEvent;

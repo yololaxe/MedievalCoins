@@ -2,7 +2,7 @@ package fr.renblood.medievalcoins.network;
 
 
 import fr.renblood.medievalcoins.MedievalCoin;
-import fr.renblood.medievalcoins.client.model.PlayerModel;
+import fr.renblood.medievalcoins.api.model.PlayerModel;
 import fr.renblood.medievalcoins.inventory.banker.BankerGuiMenu;
 import fr.renblood.medievalcoins.inventory.banker.DepositGuiMenu;
 import net.minecraft.core.BlockPos;

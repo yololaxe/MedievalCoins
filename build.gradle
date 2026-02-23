@@ -120,6 +120,8 @@ tasks.named('jar', Jar).configure {
     // Inclure le refmap généré
     from(sourceSets.main.output) {
         include 'medieval_coins.refmap.json'
+        // Force l'inclusion du package api
+        include 'fr/renblood/medievalcoins/api/**'
     }
 
     finalizedBy 'reobfJar'
@@ -128,8 +130,16 @@ tasks.named('jar', Jar).configure {
     doLast {
         copy {
             from archiveFile
-            into file('D:\\Projets\\Projet\\mods\\MedievalStructures\\MedievalStructures\\libs')
+            into file('D:/Projets/Projet/mods/MedievalStructures/libs')
         }
+        // Copie aussi vers le dossier mods du serveur de test si différent du launcher
+        // (Optionnel, à décommenter si besoin)
+        /*
+        copy {
+            from archiveFile
+            into file('CHEMIN_VERS_SERVEUR_TEST/mods')
+        }
+        */
     }
 }
 

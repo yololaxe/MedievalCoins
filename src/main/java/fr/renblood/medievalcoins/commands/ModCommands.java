@@ -1,6 +1,7 @@
 package fr.renblood.medievalcoins.commands;
 
 import com.mojang.brigadier.CommandDispatcher;
+import com.mojang.brigadier.arguments.BoolArgumentType;
 import com.mojang.brigadier.arguments.DoubleArgumentType;
 import com.mojang.brigadier.arguments.IntegerArgumentType;
 import com.mojang.brigadier.arguments.StringArgumentType;
@@ -56,6 +57,9 @@ public class ModCommands {
                 )
                 .then(Commands.literal("refresh")
                     .executes(c -> refreshPlayers(c.getSource())))
+                .then(Commands.literal("debug")
+                    .then(Commands.argument("enabled", BoolArgumentType.bool())
+                        .executes(c -> setDebugMode(c.getSource(), BoolArgumentType.getBool(c, "enabled")))))
                 .then(Commands.literal("time")
                     .then(Commands.literal("daylength")
                         .then(Commands.argument("multiplier", DoubleArgumentType.doubleArg(0.1, 100.0))
@@ -141,6 +145,12 @@ public class ModCommands {
                 );
             }
         }).start();
+        return 1;
+    }
+    
+    private static int setDebugMode(CommandSourceStack src, boolean enabled) {
+        MedievalCoin.DEBUG_MODE = enabled;
+        src.sendSuccess(() -> Component.literal("✅ Debug mode " + (enabled ? "enabled" : "disabled")), true);
         return 1;
     }
 

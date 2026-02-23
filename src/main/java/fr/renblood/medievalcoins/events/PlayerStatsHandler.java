@@ -1,7 +1,7 @@
 package fr.renblood.medievalcoins.events;
 
 import fr.renblood.medievalcoins.MedievalCoin;
-import fr.renblood.medievalcoins.client.model.PlayerModel;
+import fr.renblood.medievalcoins.api.model.PlayerModel;
 import fr.renblood.medievalcoins.network.ApiClient;
 import fr.renblood.medievalcoins.network.PlayerCache;
 import fr.renblood.medievalcoins.network.PlayerStatsUpdateMessage;

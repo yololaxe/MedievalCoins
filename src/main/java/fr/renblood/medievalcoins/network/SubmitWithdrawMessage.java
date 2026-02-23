@@ -3,7 +3,7 @@ package fr.renblood.medievalcoins.network;
 
 import com.mojang.authlib.GameProfile;
 import fr.renblood.medievalcoins.MedievalCoin;
-import fr.renblood.medievalcoins.client.model.PlayerModel;
+import fr.renblood.medievalcoins.api.model.PlayerModel;
 import fr.renblood.medievalcoins.inventory.banker.WithdrawGuiMenu;
 import fr.renblood.medievalcoins.item.Coins;
 import fr.renblood.medievalcoins.network.PlayerCache;

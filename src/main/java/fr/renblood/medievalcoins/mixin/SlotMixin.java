@@ -1,6 +1,6 @@
 package fr.renblood.medievalcoins.mixin;
 
-import fr.renblood.medievalcoins.client.model.PlayerModel;
+import fr.renblood.medievalcoins.api.model.PlayerModel;
 import fr.renblood.medievalcoins.network.PlayerCache;
 import net.minecraft.client.Minecraft;
 import net.minecraft.world.entity.player.Player;

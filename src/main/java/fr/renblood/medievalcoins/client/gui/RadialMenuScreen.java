@@ -2,7 +2,7 @@ package fr.renblood.medievalcoins.client.gui;
 
 import com.mojang.blaze3d.systems.RenderSystem;
 import fr.renblood.medievalcoins.MedievalCoin;
-import fr.renblood.medievalcoins.client.model.PlayerModel;
+import fr.renblood.medievalcoins.api.model.PlayerModel;
 import fr.renblood.medievalcoins.network.PlayerCache;
 import fr.renblood.medievalcoins.tree.TreeAbility;
 import net.minecraft.client.Minecraft;
@@ -50,36 +50,13 @@ public class RadialMenuScreen extends Screen {
         double dy = mouseY - centerY;
         double distance = Math.sqrt(dx * dx + dy * dy);
         
-        // Décalage angulaire pour la sélection et le rendu (22.5 degrés = PI/8)
-        // Cela permet d'aligner les secteurs sur les diagonales
         double offsetAngle = 22.5;
         
         if (distance > 20) {
             double angle = Math.toDegrees(Math.atan2(dy, dx));
             if (angle < 0) angle += 360;
-            
-            // On ajoute l'offset pour le calcul de l'index
-            // Avant : 0° = Est. Maintenant : 0° = Est décalé
             float sectorSize = 360f / options.size();
-            // On décale de sectorSize/2 pour centrer la sélection, PLUS l'offset de rotation voulu
-            // Ici on veut juste que le secteur 0 soit centré sur 22.5° au lieu de 0° ?
-            // Non, on veut que le secteur 0 soit entre 0 et 45.
-            // Donc le centre du secteur 0 est à 22.5°.
-            
-            // Formule standard pour centrer sur l'axe : (angle + sectorSize/2)
-            // Si on veut décaler, on ajoute l'offset.
-            // Essayons sans offset supplémentaire car sectorSize/2 fait déjà 22.5
-            // Si angle = 0, index = (22.5 / 45) = 0.5 -> 0.
-            // Si angle = 44, index = (66.5 / 45) = 1.4 -> 1.
-            // Donc le secteur 0 couvre [-22.5, 22.5].
-            
-            // Si on veut que le secteur 0 couvre [0, 45], il faut décaler de -22.5 (ou +22.5 dans l'autre sens ?)
-            // Si angle = 10, on veut index 0.
-            // Si angle = 40, on veut index 0.
-            // Si angle = 50, on veut index 1.
-            // Donc index = angle / 45.
-            
-            selectedIndex = (int) ((angle % 360) / sectorSize);
+            selectedIndex = (int) (((angle + sectorSize / 2) % 360) / sectorSize);
         } else {
             selectedIndex = -1;
         }
@@ -90,12 +67,7 @@ public class RadialMenuScreen extends Screen {
             RadialOption opt = options.get(i);
             boolean isLocked = isLocked(opt);
             
-            // Calcul de l'angle pour le rendu de l'icône
-            // On veut que l'icône soit au centre du secteur.
-            // Si le secteur 0 est [0, 45], le centre est 22.5.
-            double angleDeg = (i * (360.0 / options.size())) + offsetAngle;
-            double angleRad = Math.toRadians(angleDeg);
-            
+            double angleRad = Math.toRadians((i * (360.0 / options.size())) + offsetAngle);
             int x = centerX + (int) (Math.cos(angleRad) * radius);
             int y = centerY + (int) (Math.sin(angleRad) * radius);
             

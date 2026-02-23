@@ -23,7 +23,7 @@ public class StatsCommand {
 
         d.register(Commands.literal("statsrefresh")
                 .requires(src -> src.hasPermission(2)) // OP niveau 2 requis
-                
+
                 // /statsrefresh (soi-même)
                 .executes(c -> {
                     if (c.getSource().getEntity() instanceof ServerPlayer player) {

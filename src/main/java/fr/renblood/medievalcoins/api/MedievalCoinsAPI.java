@@ -2,26 +2,116 @@ package fr.renblood.medievalcoins.api;
 
 import com.google.gson.JsonObject;
 import fr.renblood.medievalcoins.MedievalCoin;
-import fr.renblood.medievalcoins.client.model.PlayerModel;
+import fr.renblood.medievalcoins.api.model.NpcModel;
+import fr.renblood.medievalcoins.api.model.NpcSpawnModel;
+import fr.renblood.medievalcoins.api.model.PlayerModel;
+import fr.renblood.medievalcoins.api.model.QuestModel;
 import fr.renblood.medievalcoins.network.ApiClient;
 import fr.renblood.medievalcoins.network.MoneyUpdateMessage;
 import fr.renblood.medievalcoins.network.PlayerCache;
 import fr.renblood.medievalcoins.network.PlayerStatsUpdateMessage;
+import fr.renblood.medievalcoins.network.RegionHighlightMessage;
+import net.minecraft.core.BlockPos;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraftforge.network.PacketDistributor;
+
+import java.util.Collections;
+import java.util.List;
 
 /**
  * API publique pour permettre aux autres mods d'interagir avec MedievalCoins.
  */
 public class MedievalCoinsAPI {
 
+    // --- NPC & SPAWNS ---
+
+    public static List<NpcModel> getNpcs() {
+        try {
+            if (MedievalCoin.DEBUG_MODE) MedievalCoin.LOGGER.info("API: Fetching NPCs list...");
+            List<NpcModel> list = ApiClient.getNpcs();
+            if (MedievalCoin.DEBUG_MODE) MedievalCoin.LOGGER.info("API: Fetched " + list.size() + " NPCs.");
+            return list;
+        } catch (Exception e) {
+            MedievalCoin.LOGGER.error("Failed to fetch NPCs from API", e);
+            return Collections.emptyList();
+        }
+    }
+
+    public static List<NpcSpawnModel> getNpcSpawns(String worldName) {
+        try {
+            if (MedievalCoin.DEBUG_MODE) MedievalCoin.LOGGER.info("API: Fetching NPC Spawns for world: " + worldName);
+            List<NpcSpawnModel> list = ApiClient.getNpcSpawns(worldName);
+            if (MedievalCoin.DEBUG_MODE) MedievalCoin.LOGGER.info("API: Fetched " + list.size() + " spawns.");
+            return list;
+        } catch (Exception e) {
+            MedievalCoin.LOGGER.error("Failed to fetch NPC spawns from API", e);
+            return Collections.emptyList();
+        }
+    }
+
+    public static List<NpcSpawnModel> getNpcSpawns() {
+        return getNpcSpawns(null);
+    }
+
+    public static boolean createNpc(NpcModel npc) {
+        try {
+            if (MedievalCoin.DEBUG_MODE) MedievalCoin.LOGGER.info("API: Creating NPC: " + npc.name + " (" + npc.type + ")");
+            boolean result = ApiClient.createNpc(npc);
+            if (MedievalCoin.DEBUG_MODE) MedievalCoin.LOGGER.info("API: Create NPC result: " + result);
+            return result;
+        } catch (Exception e) {
+            MedievalCoin.LOGGER.error("Failed to create NPC via API", e);
+            return false;
+        }
+    }
+
+    public static boolean createNpcSpawn(NpcSpawnModel spawn) {
+        try {
+            if (MedievalCoin.DEBUG_MODE) MedievalCoin.LOGGER.info("API: Creating NPC Spawn for NPC: " + spawn.npcId + " at " + spawn.x + "," + spawn.y + "," + spawn.z);
+            boolean result = ApiClient.createNpcSpawn(spawn);
+            if (MedievalCoin.DEBUG_MODE) MedievalCoin.LOGGER.info("API: Create Spawn result: " + result);
+            return result;
+        } catch (Exception e) {
+            MedievalCoin.LOGGER.error("Failed to create NPC spawn via API", e);
+            return false;
+        }
+    }
+
+    public static boolean addQuestToNpc(String npcId, String questId) {
+        try {
+            if (MedievalCoin.DEBUG_MODE) MedievalCoin.LOGGER.info("API: Adding quest " + questId + " to NPC " + npcId);
+            return ApiClient.addQuestToNpc(npcId, questId);
+        } catch (Exception e) {
+            MedievalCoin.LOGGER.error("Failed to add quest to NPC via API", e);
+            return false;
+        }
+    }
+
+    public static boolean removeQuestFromNpc(String npcId, String questId) {
+        try {
+            if (MedievalCoin.DEBUG_MODE) MedievalCoin.LOGGER.info("API: Removing quest " + questId + " from NPC " + npcId);
+            return ApiClient.removeQuestFromNpc(npcId, questId);
+        } catch (Exception e) {
+            MedievalCoin.LOGGER.error("Failed to remove quest from NPC via API", e);
+            return false;
+        }
+    }
+
+    // --- QUÊTES ---
+    
+    public static List<QuestModel> getAllQuests(String category) {
+        try {
+            if (MedievalCoin.DEBUG_MODE) MedievalCoin.LOGGER.info("API: Fetching all quests (category=" + category + ")");
+            return ApiClient.getAllQuests(category);
+        } catch (Exception e) {
+            MedievalCoin.LOGGER.error("Failed to fetch quests from API", e);
+            return Collections.emptyList();
+        }
+    }
+
     // --- GESTION XP MÉTIER ---
 
-    /**
-     * Récupère l'XP actuelle d'un métier pour un joueur (depuis le cache serveur).
-     * @return L'XP actuelle, ou 0 si introuvable.
-     */
     public static long getJobXp(ServerPlayer player, String job) {
         String uuid = player.getGameProfile().getId().toString();
         PlayerModel pm = PlayerCache.getPlayer(uuid);
@@ -34,10 +124,6 @@ public class MedievalCoinsAPI {
         return 0;
     }
 
-    /**
-     * Récupère le niveau actuel d'un métier pour un joueur (depuis le cache serveur).
-     * @return Le niveau actuel, ou 0 si introuvable.
-     */
     public static int getJobLevel(ServerPlayer player, String job) {
         String uuid = player.getGameProfile().getId().toString();
         PlayerModel pm = PlayerCache.getPlayer(uuid);
@@ -50,53 +136,41 @@ public class MedievalCoinsAPI {
         return 0;
     }
 
-    /**
-     * Ajoute de l'expérience à un métier pour un joueur.
-     * Cette méthode est asynchrone (appel API web).
-     */
     public static void addJobXp(ServerPlayer player, String job, int amount) {
         modifyJobXp(player, "add", job, amount);
     }
 
-    /**
-     * Définit l'expérience d'un métier pour un joueur.
-     */
     public static void setJobXp(ServerPlayer player, String job, int amount) {
         modifyJobXp(player, "set", job, amount);
     }
 
-    /**
-     * Retire de l'expérience à un métier pour un joueur.
-     */
     public static void removeJobXp(ServerPlayer player, String job, int amount) {
         modifyJobXp(player, "remove", job, amount);
     }
 
     // --- GESTION ÉCONOMIE ---
 
-    /**
-     * Récupère le solde actuel du joueur (depuis le cache serveur).
-     */
     public static double getBalance(ServerPlayer player) {
         String uuid = player.getGameProfile().getId().toString();
         PlayerModel pm = PlayerCache.getPlayer(uuid);
         return pm != null ? pm.money : 0.0;
     }
 
-    /**
-     * Ajoute de l'argent au joueur (via API).
-     * @param amount Montant à ajouter (en "cuivre" ou unité de base).
-     */
     public static void addMoney(ServerPlayer player, int amount) {
         modifyMoney(player, amount, true);
     }
 
-    /**
-     * Retire de l'argent au joueur (via API).
-     * @param amount Montant à retirer.
-     */
     public static void removeMoney(ServerPlayer player, int amount) {
         modifyMoney(player, amount, false);
+    }
+
+    // --- RENDU VISUEL ---
+
+    public static void showRegionHighlight(ServerPlayer player, BlockPos min, BlockPos max, int color, int durationTicks) {
+        MedievalCoin.PACKET_HANDLER.send(
+                PacketDistributor.PLAYER.with(() -> player),
+                new RegionHighlightMessage(min, max, color, durationTicks)
+        );
     }
 
 
@@ -107,7 +181,6 @@ public class MedievalCoinsAPI {
             try {
                 String uuid = player.getGameProfile().getId().toString();
                 
-                // Calcul du bonus d'XP basé sur la compétence "skill"
                 int finalAmount = amount;
                 if ("add".equalsIgnoreCase(action)) {
                     PlayerModel pm = PlayerCache.getPlayer(uuid);
@@ -170,28 +243,15 @@ public class MedievalCoinsAPI {
                 if (add) {
                     newBalance = ApiClient.deposit(pm.id_minecraft, amount);
                 } else {
-                    // Pour le retrait, on utilise withdraw avec un type de pièce fictif (ex: 0 pour iron)
-                    // ou on adapte l'API. Ici on suppose que withdraw gère le montant global.
-                    // L'API withdraw actuelle prend (id, coinType, amount).
-                    // Si on veut retirer un montant global, il faudrait une route dédiée ou adapter.
-                    // Pour l'instant, on simule un retrait de "Iron Coins" (type 0) si amount est petit,
-                    // mais l'API withdraw semble retirer des PIÈCES, pas une valeur globale.
-                    // ATTENTION : ApiClient.withdraw retire 'amount' pièces de type 'coinType'.
-                    // Si on veut retirer de la valeur, il faut une route 'remove_money' ou similaire.
-                    // Comme elle n'existe pas explicitement dans ce que j'ai vu, je vais utiliser withdraw avec type 0 (Iron = 1 unité)
-                    // en supposant que 1 Iron = 1 unité de monnaie.
                     newBalance = ApiClient.withdraw(pm.id_minecraft, 0, amount);
                 }
                 
-                // Mise à jour locale
                 pm.money = newBalance;
                 PlayerCache.updatePlayer(pm);
-                PlayerModel updatedPm = pm; // Pour la lambda
+                PlayerModel updatedPm = pm;
 
                 player.getServer().execute(() -> {
-                    // Synchro argent
                     MedievalCoin.PACKET_HANDLER.send(PacketDistributor.PLAYER.with(() -> player), new MoneyUpdateMessage(uuid, newBalance));
-                    // Synchro globale
                     MedievalCoin.PACKET_HANDLER.send(PacketDistributor.PLAYER.with(() -> player), new PlayerStatsUpdateMessage(updatedPm));
                     
                     String action = add ? "reçu" : "payé";

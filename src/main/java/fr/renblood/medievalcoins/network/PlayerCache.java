@@ -1,6 +1,6 @@
 package fr.renblood.medievalcoins.network;
 
-import fr.renblood.medievalcoins.client.model.PlayerModel;
+import fr.renblood.medievalcoins.api.model.PlayerModel;
 
 import java.util.ArrayList;
 import java.util.Collections;
