@@ -1,7 +1,6 @@
 package fr.renblood.medievalcoins.events;
 
 import fr.renblood.medievalcoins.MedievalCoin;
-import fr.renblood.medievalcoins.client.gui.RadialMenuScreen;
 import net.minecraft.client.KeyMapping;
 import net.minecraft.client.Minecraft;
 import net.minecraftforge.api.distmarker.Dist;
@@ -11,9 +10,13 @@ import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
 import org.lwjgl.glfw.GLFW;
 
+// Cette classe semble faire doublon avec KeybindInit.
+// Je vais commenter son contenu pour éviter les conflits et les références aux écrans.
+// Si elle est utilisée ailleurs, il faudra la supprimer proprement.
+
 @Mod.EventBusSubscriber(modid = MedievalCoin.MODID, value = Dist.CLIENT)
 public class KeyInputHandler {
-
+    /*
     public static final KeyMapping RADIAL_MENU_KEY = new KeyMapping(
             "key.medieval_coins.radial_menu",
             GLFW.GLFW_KEY_G,
@@ -23,7 +26,7 @@ public class KeyInputHandler {
     @SubscribeEvent
     public static void onKeyInput(InputEvent.Key event) {
         if (RADIAL_MENU_KEY.consumeClick()) {
-            Minecraft.getInstance().setScreen(new RadialMenuScreen());
+            // Minecraft.getInstance().setScreen(new RadialMenuScreen()); // CAUSE DU CRASH
         }
     }
     
@@ -34,4 +37,5 @@ public class KeyInputHandler {
             event.register(RADIAL_MENU_KEY);
         }
     }
+    */
 }

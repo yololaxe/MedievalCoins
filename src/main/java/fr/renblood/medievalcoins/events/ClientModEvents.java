@@ -41,10 +41,10 @@ public class ClientModEvents {
             MenuScreens.register(MedievalCoinsModMenus.DEPOSIT_MENU.get(), DepositGuiScreen::new);
             MenuScreens.register(MedievalCoinsModMenus.PURSE_CONTAINER.get(), PurseScreen::new);
             MenuScreens.register(MedievalCoinsModMenus.WITHDRAW_MENU.get(), WithdrawGuiScreen::new);
+            
+            // Définit le type de rendu CUTOUT pour les torches magiques (transparence)
+            ItemBlockRenderTypes.setRenderLayer(BlockInit.MAGIC_TORCH.get(), RenderType.cutout());
+            ItemBlockRenderTypes.setRenderLayer(BlockInit.MAGIC_WALL_TORCH.get(), RenderType.cutout());
         });
-
-        // Définit le type de rendu CUTOUT pour les torches magiques (transparence)
-        ItemBlockRenderTypes.setRenderLayer(BlockInit.MAGIC_TORCH.get(), RenderType.cutout());
-        ItemBlockRenderTypes.setRenderLayer(BlockInit.MAGIC_WALL_TORCH.get(), RenderType.cutout());
     }
 }
