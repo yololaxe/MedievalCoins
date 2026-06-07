@@ -189,6 +189,33 @@ public class MedievalCoin {
                 Optional.of(NetworkDirection.PLAY_TO_CLIENT)
         );
 
+        PACKET_HANDLER.registerMessage(
+                messageID++,
+                OpenQuestScreenMessage.class,
+                OpenQuestScreenMessage::encode,
+                OpenQuestScreenMessage::decode,
+                OpenQuestScreenMessage::handle,
+                Optional.of(NetworkDirection.PLAY_TO_CLIENT)
+        );
+
+        PACKET_HANDLER.registerMessage(
+                messageID++,
+                OpenPrayerScreenMessage.class,
+                OpenPrayerScreenMessage::encode,
+                OpenPrayerScreenMessage::decode,
+                OpenPrayerScreenMessage::handle,
+                Optional.of(NetworkDirection.PLAY_TO_CLIENT)
+        );
+
+        PACKET_HANDLER.registerMessage(
+                messageID++,
+                PrayerSuccessMessage.class,
+                PrayerSuccessMessage::encode,
+                PrayerSuccessMessage::decode,
+                PrayerSuccessMessage::handle,
+                Optional.of(NetworkDirection.PLAY_TO_SERVER)
+        );
+
     }
 
     // Méthode utilitaire pour récupérer le niveau serveur (Overworld par défaut)

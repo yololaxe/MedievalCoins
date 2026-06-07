@@ -6,11 +6,19 @@ import java.util.Map;
 
 public class QuestModel {
     public String category;
+
+    @SerializedName(value = "questId", alternate = {"quest_id", "id", "_id"})
     public String questId;
+
+    @SerializedName(value = "parentId", alternate = {"parent_id", "parent"})
     public String parentId;
+
     public String name;
     
+    @SerializedName(value = "prerequisitesAll", alternate = {"prerequisites_all"})
     public List<String> prerequisitesAll;
+
+    @SerializedName(value = "prerequisitesAny", alternate = {"prerequisites_any"})
     public List<String> prerequisitesAny;
     
     public String npc;
@@ -38,11 +46,13 @@ public class QuestModel {
     }
     
     public static class ItemRequirement {
+        @SerializedName(value = "itemId", alternate = {"item_id", "item"})
         public String itemId;
         public int count;
     }
 
     public static class Reward {
+        @SerializedName(value = "itemId", alternate = {"item_id", "item"})
         public String itemId;
         public int count;
     }

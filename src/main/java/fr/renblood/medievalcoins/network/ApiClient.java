@@ -1,7 +1,9 @@
 package fr.renblood.medievalcoins.network;
 
 import com.google.gson.Gson;
+import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
 import com.google.gson.reflect.TypeToken;
 import fr.renblood.medievalcoins.MedievalCoin;
 import fr.renblood.medievalcoins.api.model.*;
@@ -14,6 +16,8 @@ import java.io.OutputStream;
 import java.lang.reflect.Type;
 import java.net.HttpURLConnection;
 import java.net.URL;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.UUID;
 
@@ -28,19 +32,26 @@ public class ApiClient {
         String endpoint = buildUrl(cfg.apiUrl, "/npcs/list/");
         String json = sendGetRequest(endpoint, cfg.apiKey);
         Type listType = new TypeToken<List<NpcModel>>(){}.getType();
-        return GSON.fromJson(json, listType);
+        return parseListResponse(json, listType, "npcs", "results", "data");
     }
 
     public static List<NpcSpawnModel> getNpcSpawns(String worldName) throws Exception {
+        return getNpcSpawns(worldName, true);
+    }
+
+    public static List<NpcSpawnModel> getNpcSpawns(String worldName, boolean includeInactive) throws Exception {
         ModConfig cfg = ModConfig.load();
         String endpoint = buildUrl(cfg.apiUrl, "/npcs/spawns/list/");
         if (worldName != null && !worldName.isEmpty()) {
-             endpoint = buildUrl(cfg.apiUrl, "/npcs/spawns/world/" + worldName + "/");
+             endpoint = buildUrl(cfg.apiUrl, "/npcs/spawns/world/" + encodePathSegment(worldName) + "/");
         }
+        endpoint += "?include_inactive=" + includeInactive + "&includeInactive=" + includeInactive;
         
         String json = sendGetRequest(endpoint, cfg.apiKey);
         Type listType = new TypeToken<List<NpcSpawnModel>>(){}.getType();
-        return GSON.fromJson(json, listType);
+        List<NpcSpawnModel> spawns = parseListResponse(json, listType, "spawns", "npc_spawns", "results", "data");
+        if (includeInactive) return spawns;
+        return spawns.stream().filter(spawn -> spawn != null && spawn.active).toList();
     }
 
     public static boolean createNpc(NpcModel npc) throws Exception {
@@ -65,16 +76,23 @@ public class ApiClient {
     }
 
     public static boolean createNpcSpawn(NpcSpawnModel spawn) throws Exception {
+        if (spawn == null) {
+            throw new IllegalArgumentException("spawn est obligatoire");
+        }
         ModConfig cfg = ModConfig.load();
         String endpoint = buildUrl(cfg.apiUrl, "/npcs/spawns/create/");
         
         // Génération automatique d'ID si manquant
         if (spawn.spawnId == null || spawn.spawnId.trim().isEmpty()) {
-            spawn.spawnId = "spawn_" + UUID.randomUUID().toString().substring(0, 8);
+            spawn.spawnId = "";
             MedievalCoin.LOGGER.warn("API: spawnId manquant. ID généré automatiquement : {}", spawn.spawnId);
         }
         
         // Vérification du npc_id
+        if (spawn.spawnId == null || spawn.spawnId.trim().isEmpty()) {
+            throw new IllegalArgumentException("spawnId est obligatoire et doit etre stable");
+        }
+
         if (spawn.npcId == null || spawn.npcId.trim().isEmpty()) {
             MedievalCoin.LOGGER.error("API: npcId manquant pour le spawn '{}'. Impossible de créer le spawn.", spawn.spawnId);
             throw new IllegalArgumentException("npcId est obligatoire pour créer un spawn");
@@ -123,7 +141,7 @@ public class ApiClient {
         
         String json = sendGetRequest(endpoint, cfg.apiKey);
         Type listType = new TypeToken<List<QuestModel>>(){}.getType();
-        return GSON.fromJson(json, listType);
+        return parseListResponse(json, listType, "quests", "results", "data");
     }
 
     public static List<PlayerQuestStateModel> getActiveQuests(String mcId, String category) throws Exception {
@@ -135,7 +153,7 @@ public class ApiClient {
         
         String json = sendGetRequest(endpoint, cfg.apiKey);
         Type listType = new TypeToken<List<PlayerQuestStateModel>>(){}.getType();
-        return GSON.fromJson(json, listType);
+        return parseListResponse(json, listType, "quests", "active_quests", "results", "data");
     }
 
     public static QuestModel getQuestDetails(String questId) throws Exception {
@@ -146,6 +164,21 @@ public class ApiClient {
     }
 
     // --- JOUEURS & ÉCONOMIE ---
+
+    public static boolean completeQuest(String playerId, String questId) throws Exception {
+        if (playerId == null || playerId.isEmpty()) {
+            throw new IllegalArgumentException("player_id manquant pour valider la quete");
+        }
+
+        ModConfig cfg = ModConfig.load();
+        JsonObject body = new JsonObject();
+        body.addProperty("quest_id", questId);
+        body.addProperty("status", "COMPLETED");
+
+        String endpoint = buildUrl(cfg.apiUrl, "/quests/player/" + playerId + "/update/");
+        sendPostRequest(endpoint, cfg.apiKey, body);
+        return true;
+    }
 
     public static PlayerModel getPlayer(String mcId) throws Exception {
         ModConfig cfg = ModConfig.load();
@@ -207,6 +240,31 @@ public class ApiClient {
             path = "/" + path;
         }
         return baseUrl + path;
+    }
+
+    private static String encodePathSegment(String value) {
+        return URLEncoder.encode(value, StandardCharsets.UTF_8).replace("+", "%20");
+    }
+
+    private static <T> T parseListResponse(String json, Type listType, String... arrayKeys) {
+        JsonElement root = JsonParser.parseString(json);
+        if (root == null || root.isJsonNull()) {
+            return GSON.fromJson("[]", listType);
+        }
+        if (root.isJsonArray()) {
+            return GSON.fromJson(root, listType);
+        }
+        if (root.isJsonObject()) {
+            JsonObject obj = root.getAsJsonObject();
+            for (String key : arrayKeys) {
+                JsonElement value = obj.get(key);
+                if (value != null && value.isJsonArray()) {
+                    return GSON.fromJson(value, listType);
+                }
+            }
+        }
+        MedievalCoin.LOGGER.warn("API: expected a list response but got: {}", json);
+        return GSON.fromJson("[]", listType);
     }
 
     private static String sendGetRequest(String endpoint, String apiKey) throws Exception {

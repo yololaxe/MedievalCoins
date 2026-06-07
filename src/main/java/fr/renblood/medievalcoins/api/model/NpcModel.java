@@ -5,13 +5,13 @@ import java.util.List;
 import java.util.Map;
 
 public class NpcModel {
-    @SerializedName("npc_id")
+    @SerializedName(value = "npc_id", alternate = {"npcId"})
     public String npcId;
     
     public String name;
     public String type;
     
-    @SerializedName("skin")
+    @SerializedName(value = "skin", alternate = {"npc_skin", "npcSkin", "texture"})
     public String texture;
     
     public List<String> dialogue;

@@ -1,6 +1,5 @@
 package fr.renblood.medievalcoins.client.gui;
 
-import com.mojang.blaze3d.systems.RenderSystem;
 import fr.renblood.medievalcoins.api.model.PlayerQuestStateModel;
 import fr.renblood.medievalcoins.api.model.QuestModel;
 import fr.renblood.medievalcoins.network.ApiClient;
@@ -10,6 +9,7 @@ import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.components.ObjectSelectionList;
 import net.minecraft.client.gui.components.Renderable;
+import net.minecraft.client.gui.screens.ChatScreen;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
@@ -23,46 +23,76 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 @OnlyIn(Dist.CLIENT)
 public class QuestScreen extends Screen {
 
     private static final String[] CATEGORIES = {"Main", "Secondary", "Tertiary", "FullRP", "SemiRP"};
+    private static final int BACKDROP = 0xCC0B0A08;
+    private static final int PANEL = 0xDD17130F;
+    private static final int PANEL_SOFT = 0xAA241D15;
+    private static final int PANEL_BORDER = 0xFF5B4630;
+    private static final int PANEL_BORDER_LIGHT = 0xFF9D7A45;
+    private static final int TEXT = 0xFFEFE2C2;
+    private static final int TEXT_MUTED = 0xFFB9A98F;
+    private static final int TEXT_DIM = 0xFF7D715F;
+    private static final int GOLD = 0xFFFFC857;
+    private static final int GREEN = 0xFF75D06A;
+    private static final int BLUE = 0xFF73C7E8;
+    private static final int RED = 0xFFE37B63;
+
     private String currentCategory = "Main";
-    
     private QuestList list;
     private QuestModel selectedQuest;
-    
-    private final Map<String, List<PlayerQuestStateModel>> questCache = new HashMap<>();
+    private PlayerQuestStateModel selectedState;
+    private Button finishButton;
+    private Button refreshButton;
+    private boolean refreshing;
+    private String statusMessage = "Cliquez sur le bouton de mise a jour pour recuperer les quetes.";
+
+    private static final Map<String, List<PlayerQuestStateModel>> QUEST_CACHE = new ConcurrentHashMap<>();
 
     public QuestScreen() {
-        super(Component.literal("Quêtes"));
+        super(Component.literal("Quetes"));
     }
 
     @Override
     protected void init() {
         if (this.minecraft == null) this.minecraft = Minecraft.getInstance();
         if (this.font == null) this.font = this.minecraft.font;
-        
+
         super.init();
-        
-        int x = this.width / 2 - 150;
-        int y = 30;
+
+        int categoryWidth = Math.min(72, Math.max(58, (this.width - 44) / CATEGORIES.length - 4));
+        int totalCategoryWidth = CATEGORIES.length * categoryWidth + (CATEGORIES.length - 1) * 4;
+        int x = this.width / 2 - totalCategoryWidth / 2;
+        int y = 46;
 
         for (int i = 0; i < CATEGORIES.length; i++) {
             String cat = CATEGORIES[i];
             this.addRenderableWidget(Button.builder(Component.literal(cat), b -> loadCategory(cat))
-                    .bounds(x + (i * 60), 10, 58, 20)
+                    .bounds(x + (i * (categoryWidth + 4)), 18, categoryWidth, 20)
                     .build());
         }
 
-        this.list = new QuestList(this.minecraft, 150, this.height - 40, y, this.height - 10, 20);
-        this.list.setLeftPos(20);
+        int listWidth = Math.min(205, Math.max(160, this.width / 3));
+        this.list = new QuestList(this.minecraft, listWidth, this.height, y, this.height - 18, 28);
+        this.list.setLeftPos(18);
         this.addRenderableWidget(this.list);
+
+        this.finishButton = this.addRenderableWidget(Button.builder(Component.literal("/finish"), b -> openFinishCommand())
+                .bounds(this.width - 112, 49, 88, 20)
+                .build());
+        this.finishButton.visible = false;
+
+        this.refreshButton = this.addRenderableWidget(Button.builder(Component.literal("\u21BB Update quests"), b -> refreshCurrentCategory())
+                .bounds(this.width - 126, 18, 108, 20)
+                .build());
 
         loadCategory(currentCategory);
     }
-    
+
     @Override
     public boolean isPauseScreen() {
         return false;
@@ -70,159 +100,411 @@ public class QuestScreen extends Screen {
 
     private void loadCategory(String category) {
         this.currentCategory = category;
-        if (this.list != null) this.list.clear();
         this.selectedQuest = null;
+        this.selectedState = null;
+        updateFinishButtonState();
+        if (this.list != null) this.list.clear();
 
-        if (questCache.containsKey(category)) {
-            populateList(questCache.get(category));
-        } else {
-            new Thread(() -> {
-                try {
-                    Minecraft mc = Minecraft.getInstance();
-                    if (mc.player == null) return;
-                    String uuid = mc.player.getGameProfile().getId().toString();
-                    List<PlayerQuestStateModel> quests = ApiClient.getActiveQuests(uuid, category);
-                    
-                    if (quests != null) {
-                        for (PlayerQuestStateModel pq : quests) {
-                            try {
-                                pq.questDetails = ApiClient.getQuestDetails(pq.quest_id);
-                            } catch (Exception e) {
-                                e.printStackTrace();
-                            }
-                        }
-                        
-                        questCache.put(category, quests);
-                        
-                        mc.execute(() -> populateList(quests));
-                    }
-                } catch (Exception e) {
-                    e.printStackTrace();
-                }
-            }).start();
+        List<PlayerQuestStateModel> cached = QUEST_CACHE.get(category);
+        if (cached != null) {
+            populateList(cached);
+            return;
         }
+
+        this.statusMessage = "Categorie non chargee. Cliquez sur Update quests.";
+    }
+
+    private void refreshCurrentCategory() {
+        if (refreshing) return;
+
+        String category = currentCategory;
+        refreshing = true;
+        statusMessage = "Mise a jour des quetes...";
+        updateRefreshButtonState();
+        if (this.list != null) this.list.clear();
+
+        new Thread(() -> {
+            Minecraft mc = Minecraft.getInstance();
+            try {
+                if (mc.player == null) {
+                    mc.execute(() -> finishRefresh(category, null, "Joueur introuvable."));
+                    return;
+                }
+
+                String uuid = mc.player.getGameProfile().getId().toString();
+                List<PlayerQuestStateModel> quests = ApiClient.getActiveQuests(uuid, category);
+                if (quests == null) quests = new ArrayList<>();
+
+                if (quests.isEmpty()) {
+                    quests = buildStatesFromAllQuests(category);
+                } else {
+                    attachQuestDetails(quests, category);
+                }
+
+                List<PlayerQuestStateModel> loadedQuests = quests;
+                QUEST_CACHE.put(category, loadedQuests);
+                mc.execute(() -> finishRefresh(category, loadedQuests, null));
+            } catch (Exception e) {
+                e.printStackTrace();
+                String message = e.getMessage() == null ? e.getClass().getSimpleName() : e.getMessage();
+                mc.execute(() -> finishRefresh(category, null, "Erreur API: " + message));
+            }
+        }, "MedievalCoins-QuestRefresh").start();
+    }
+
+    private void finishRefresh(String category, List<PlayerQuestStateModel> quests, String error) {
+        refreshing = false;
+        updateRefreshButtonState();
+        if (!category.equals(currentCategory)) return;
+
+        if (error != null) {
+            showStatus(error);
+        } else {
+            populateList(quests);
+        }
+    }
+
+    private void attachQuestDetails(List<PlayerQuestStateModel> quests, String category) {
+        Map<String, QuestModel> allQuests = new HashMap<>();
+        try {
+            allQuests = indexAllQuests(category);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
+        for (PlayerQuestStateModel pq : quests) {
+            if (pq == null || pq.quest_id == null || pq.quest_id.isEmpty()) continue;
+            pq.questDetails = allQuests.get(pq.quest_id);
+            if (pq.questDetails != null) continue;
+            try {
+                pq.questDetails = ApiClient.getQuestDetails(pq.quest_id);
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }
+    }
+
+    private List<PlayerQuestStateModel> buildStatesFromAllQuests(String category) throws Exception {
+        List<PlayerQuestStateModel> states = new ArrayList<>();
+        List<QuestModel> allQuests = ApiClient.getAllQuests(category);
+        if (allQuests == null) return states;
+
+        for (QuestModel quest : allQuests) {
+            if (quest == null) continue;
+            PlayerQuestStateModel state = new PlayerQuestStateModel();
+            state.quest_id = quest.questId != null ? quest.questId : quest.name;
+            state.status = "AVAILABLE";
+            state.questDetails = quest;
+            states.add(state);
+        }
+        return states;
+    }
+
+    private Map<String, QuestModel> indexAllQuests(String category) throws Exception {
+        Map<String, QuestModel> result = new HashMap<>();
+        List<QuestModel> allQuests = ApiClient.getAllQuests(category);
+        if (allQuests == null) return result;
+
+        for (QuestModel quest : allQuests) {
+            if (quest == null) continue;
+            if (quest.questId != null) result.put(quest.questId, quest);
+            if (quest.name != null) result.putIfAbsent(quest.name, quest);
+        }
+        return result;
     }
 
     private void populateList(List<PlayerQuestStateModel> quests) {
         if (this.list == null) return;
         this.list.clear();
+        this.selectedQuest = null;
+        this.selectedState = null;
+        updateFinishButtonState();
+
+        int added = 0;
         for (PlayerQuestStateModel pq : quests) {
-            if (pq.questDetails != null) {
+            if (pq != null && pq.questDetails != null) {
                 this.list.add(new QuestEntry(pq));
+                added++;
             }
         }
+
+        if (added == 0) {
+            showStatus("Aucune quete dans la categorie " + currentCategory + ".");
+        } else {
+            this.statusMessage = "";
+        }
+    }
+
+    private void showStatus(String message) {
+        if (this.list != null) this.list.clear();
+        this.selectedQuest = null;
+        this.selectedState = null;
+        this.statusMessage = message;
+        updateFinishButtonState();
     }
 
     @Override
     public void render(GuiGraphics gg, int mouseX, int mouseY, float partialTick) {
         if (this.minecraft == null) this.minecraft = Minecraft.getInstance();
         if (this.font == null) this.font = this.minecraft.font;
-        
+
         this.renderBackground(gg);
-        
+        gg.fill(0, 0, this.width, this.height, BACKDROP);
+
+        renderFrame(gg, font);
         for (Renderable renderable : this.renderables) {
             renderable.render(gg, mouseX, mouseY, partialTick);
         }
-        
+
         Font fontRenderer = this.font;
         if (fontRenderer == null) return;
-        
-        int detailX = 190; 
-        int detailY = 40;
-        
-        if (selectedQuest != null) {
-            String playerName = this.minecraft.player != null ? this.minecraft.player.getName().getString() : "Joueur";
-            String npcName = selectedQuest.npc != null ? selectedQuest.npc : "PNJ";
 
-            gg.drawString(fontRenderer, "§l" + selectedQuest.name, detailX, detailY, 0xFFFFFF);
-            detailY += 15;
-            
-            String desc = selectedQuest.getDescription();
-            if (desc != null && !desc.isEmpty()) {
-                desc = desc.replace("{player}", playerName).replace("{npc}", npcName);
-                for (FormattedCharSequence line : fontRenderer.split(Component.literal(desc), this.width - detailX - 20)) {
-                    gg.drawString(fontRenderer, line, detailX, detailY, 0xAAAAAA);
-                    detailY += 10;
-                }
-            }
-            
-            detailY += 10;
-            gg.drawString(fontRenderer, "§nObjectifs :", detailX, detailY, 0xFFFFFF);
-            detailY += 12;
-            
-            if (selectedQuest.objectives != null) {
-                for (QuestModel.Objective obj : selectedQuest.objectives) {
-                    if (obj.description != null && !obj.description.isEmpty()) {
-                        String objDesc = obj.description.replace("{player}", playerName).replace("{npc}", npcName);
-                        gg.drawString(fontRenderer, "- " + objDesc, detailX, detailY, 0xCCCCCC);
-                        detailY += 10;
-                    } else {
-                        if ("ITEM".equals(obj.type) && obj.items != null) {
-                            for (QuestModel.ItemRequirement req : obj.items) {
-                                String itemName = req.itemId;
-                                Item item = ForgeRegistries.ITEMS.getValue(new ResourceLocation(req.itemId));
-                                if (item != null) {
-                                    itemName = item.getDescription().getString();
-                                }
-                                gg.drawString(fontRenderer, "- Récolter " + req.count + "x " + itemName, detailX, detailY, 0xCCCCCC);
-                                detailY += 10;
-                            }
-                        } else if ("LOCATION".equals(obj.type)) {
-                            gg.drawString(fontRenderer, "- Se rendre en " + obj.coord, detailX, detailY, 0xCCCCCC);
-                            detailY += 10;
-                        } else if ("TALK".equals(obj.type)) {
-                            gg.drawString(fontRenderer, "- Parler à " + (obj.target != null ? obj.target : "PNJ"), detailX, detailY, 0xCCCCCC);
-                            detailY += 10;
-                        } else {
-                            gg.drawString(fontRenderer, "- " + obj.type + " " + (obj.target != null ? obj.target : ""), detailX, detailY, 0xCCCCCC);
-                            detailY += 10;
-                        }
-                    }
-                }
-            }
-            
-            detailY += 10;
-            gg.drawString(fontRenderer, "§nRécompenses :", detailX, detailY, 0xFFFFFF);
-            detailY += 12;
-            
-            if (selectedQuest.money > 0) {
-                gg.drawString(fontRenderer, "+ " + selectedQuest.money + " Pièces", detailX, detailY, 0xFFD700);
-                detailY += 10;
-            }
-            if (selectedQuest.xp != null && selectedQuest.xp.amount > 0) {
-                gg.drawString(fontRenderer, "+ " + selectedQuest.xp.amount + " XP " + selectedQuest.xp.job, detailX, detailY, 0x00FF00);
-                detailY += 10;
-            }
-            if (selectedQuest.rewards != null) {
-                for (QuestModel.Reward reward : selectedQuest.rewards) {
-                    String itemName = reward.itemId;
-                    Item item = ForgeRegistries.ITEMS.getValue(new ResourceLocation(reward.itemId));
-                    if (item != null) {
-                        itemName = item.getDescription().getString();
-                    }
-                    gg.drawString(fontRenderer, "+ " + reward.count + "x " + itemName, detailX, detailY, 0x55FFFF);
-                    detailY += 10;
-                }
+        int listWidth = this.list != null ? this.list.getWidth() : Math.min(205, Math.max(160, this.width / 3));
+        int detailX = 18 + listWidth + 18;
+        int detailY = 60;
+        int detailWidth = this.width - detailX - 34;
+        updateFinishButtonPosition(detailX, detailWidth);
+        updateFinishButtonState();
+
+        if (selectedQuest != null) {
+            renderQuestDetails(gg, fontRenderer, detailX, detailY, detailWidth);
+        } else {
+            String message = statusMessage == null || statusMessage.isEmpty()
+                    ? "Selectionnez une quete"
+                    : statusMessage;
+            gg.drawString(fontRenderer, "Aucune quete selectionnee", detailX, detailY, TEXT, false);
+            detailY += 18;
+            drawWrappedText(gg, fontRenderer, message, detailX, detailY, detailWidth, TEXT_MUTED, 11);
+        }
+    }
+
+    private void renderFrame(GuiGraphics gg, Font fontRenderer) {
+        int listWidth = this.list != null ? this.list.getWidth() : Math.min(205, Math.max(160, this.width / 3));
+        int left = 12;
+        int top = 10;
+        int bottom = this.height - 10;
+        int listLeft = 18;
+        int listTop = 46;
+        int listBottom = this.height - 18;
+        int detailLeft = listLeft + listWidth + 12;
+        int detailRight = this.width - 18;
+
+        drawPanel(gg, left, top, this.width - 12, bottom, PANEL);
+        gg.drawCenteredString(fontRenderer, "Journal de quetes", this.width / 2, 8, GOLD);
+
+        drawPanel(gg, listLeft - 4, listTop - 4, listLeft + listWidth + 4, listBottom + 4, PANEL_SOFT);
+        gg.drawString(fontRenderer, "Categorie", listLeft, 34, TEXT_DIM, false);
+        gg.drawString(fontRenderer, currentCategory, listLeft + 58, 34, GOLD, false);
+
+        drawPanel(gg, detailLeft, listTop - 4, detailRight, listBottom + 4, PANEL_SOFT);
+        gg.fill(detailLeft + 1, listTop - 3, detailRight - 1, listTop + 18, 0x66302017);
+        gg.drawString(fontRenderer, selectedQuest != null ? "Details de la quete" : "Journal", detailLeft + 12, listTop + 3, TEXT_MUTED, false);
+    }
+
+    private void drawPanel(GuiGraphics gg, int left, int top, int right, int bottom, int color) {
+        gg.fill(left, top, right, bottom, color);
+        gg.fill(left, top, right, top + 1, PANEL_BORDER_LIGHT);
+        gg.fill(left, bottom - 1, right, bottom, PANEL_BORDER);
+        gg.fill(left, top, left + 1, bottom, PANEL_BORDER);
+        gg.fill(right - 1, top, right, bottom, PANEL_BORDER);
+    }
+
+    private void renderQuestDetails(GuiGraphics gg, Font fontRenderer, int detailX, int detailY, int detailWidth) {
+        String playerName = this.minecraft.player != null ? this.minecraft.player.getName().getString() : "Joueur";
+        String npcName = selectedQuest.npc != null ? selectedQuest.npc : "PNJ";
+        String questName = selectedQuest.name != null ? selectedQuest.name : "Quete sans nom";
+        String questId = selectedState != null ? selectedState.quest_id : selectedQuest.questId;
+
+        gg.drawString(fontRenderer, fontRenderer.plainSubstrByWidth(questName, detailWidth), detailX, detailY, TEXT, false);
+        detailY += 12;
+        gg.drawString(fontRenderer, "ID: " + safeText(questId, "non renseigne"), detailX, detailY, TEXT_DIM, false);
+        detailY += 12;
+        renderMetaLine(gg, fontRenderer, detailX, detailY, detailWidth);
+        detailY += 18;
+
+        String desc = selectedQuest.getDescription();
+        if (desc != null && !desc.isEmpty()) {
+            desc = desc.replace("{player}", playerName).replace("{npc}", npcName);
+            detailY = drawWrappedText(gg, fontRenderer, desc, detailX, detailY, detailWidth, TEXT_MUTED, 11);
+        }
+
+        detailY += 12;
+        detailY = renderSectionTitle(gg, fontRenderer, "Objectifs", detailX, detailY, detailWidth, BLUE);
+
+        if (selectedQuest.objectives != null && !selectedQuest.objectives.isEmpty()) {
+            for (QuestModel.Objective obj : selectedQuest.objectives) {
+                detailY = renderObjective(gg, fontRenderer, obj, detailX, detailY, detailWidth, playerName, npcName);
             }
         } else {
-            gg.drawCenteredString(fontRenderer, "Sélectionnez une quête", this.width / 2 + 50, this.height / 2, 0x888888);
+            detailY = drawBulletLine(gg, fontRenderer, "Aucun objectif renseigne", detailX, detailY, detailWidth, TEXT_DIM);
         }
+
+        detailY += 10;
+        detailY = renderSectionTitle(gg, fontRenderer, "Recompenses", detailX, detailY, detailWidth, GOLD);
+
+        boolean hasReward = false;
+        if (selectedQuest.money > 0) {
+            detailY = drawBulletLine(gg, fontRenderer, selectedQuest.money + " pieces", detailX, detailY, detailWidth, GOLD);
+            hasReward = true;
+        }
+        if (selectedQuest.xp != null && selectedQuest.xp.amount > 0) {
+            detailY = drawBulletLine(gg, fontRenderer, selectedQuest.xp.amount + " XP " + selectedQuest.xp.job, detailX, detailY, detailWidth, GREEN);
+            hasReward = true;
+        }
+        if (selectedQuest.rewards != null) {
+            for (QuestModel.Reward reward : selectedQuest.rewards) {
+                String itemName = resolveItemName(reward.itemId);
+                detailY = drawBulletLine(gg, fontRenderer, reward.count + "x " + itemName, detailX, detailY, detailWidth, BLUE);
+                hasReward = true;
+            }
+        }
+        if (!hasReward) {
+            drawBulletLine(gg, fontRenderer, "Aucune recompense renseignee", detailX, detailY, detailWidth, TEXT_DIM);
+        }
+    }
+
+    private void renderMetaLine(GuiGraphics gg, Font fontRenderer, int x, int y, int width) {
+        String status = selectedState != null ? safeText(selectedState.status, "ACTIVE") : "ACTIVE";
+        int statusColor = statusColor(status);
+        gg.fill(x, y + 1, x + 6, y + 7, statusColor);
+        gg.drawString(fontRenderer, statusLabel(status), x + 10, y, statusColor, false);
+
+        String meta = safeText(selectedQuest.npc, "PNJ non renseigne");
+        if (selectedQuest.type != null && !selectedQuest.type.isEmpty()) meta += "  |  " + selectedQuest.type;
+        gg.drawString(fontRenderer, fontRenderer.plainSubstrByWidth(meta, width - 86), x + 86, y, TEXT_DIM, false);
+    }
+
+    private int renderSectionTitle(GuiGraphics gg, Font fontRenderer, String title, int x, int y, int width, int accentColor) {
+        gg.fill(x, y + 5, x + 14, y + 6, accentColor);
+        gg.drawString(fontRenderer, title, x + 20, y, TEXT, false);
+        gg.fill(x + 20 + fontRenderer.width(title) + 8, y + 5, x + width, y + 6, 0x665B4630);
+        return y + 14;
+    }
+
+    private int renderObjective(GuiGraphics gg, Font fontRenderer, QuestModel.Objective obj, int x, int y, int width, String playerName, String npcName) {
+        if (obj.description != null && !obj.description.isEmpty()) {
+            String objDesc = obj.description.replace("{player}", playerName).replace("{npc}", npcName);
+            return drawBulletLine(gg, fontRenderer, objDesc, x, y, width, TEXT_MUTED);
+        }
+
+        if ("ITEM".equals(obj.type) && obj.items != null) {
+            for (QuestModel.ItemRequirement req : obj.items) {
+                y = drawBulletLine(gg, fontRenderer, "Recolter " + req.count + "x " + resolveItemName(req.itemId), x, y, width, TEXT_MUTED);
+            }
+            return y;
+        }
+        if ("LOCATION".equals(obj.type)) {
+            return drawBulletLine(gg, fontRenderer, "Se rendre en " + safeText(obj.coord, "position inconnue"), x, y, width, TEXT_MUTED);
+        }
+        if ("TALK".equals(obj.type)) {
+            return drawBulletLine(gg, fontRenderer, "Parler a " + safeText(obj.target, "PNJ"), x, y, width, TEXT_MUTED);
+        }
+
+        return drawBulletLine(gg, fontRenderer, safeText(obj.type, "Objectif") + " " + safeText(obj.target, ""), x, y, width, TEXT_MUTED);
+    }
+
+    private int drawBulletLine(GuiGraphics gg, Font fontRenderer, String text, int x, int y, int width, int color) {
+        gg.fill(x, y + 4, x + 4, y + 8, color);
+        return drawWrappedText(gg, fontRenderer, text, x + 12, y, width - 12, color, 11);
+    }
+
+    private int drawWrappedText(GuiGraphics gg, Font fontRenderer, String text, int x, int y, int width, int color, int lineHeight) {
+        for (FormattedCharSequence line : fontRenderer.split(Component.literal(text), width)) {
+            gg.drawString(fontRenderer, line, x, y, color, false);
+            y += lineHeight;
+        }
+        return y;
+    }
+
+    private int statusColor(String status) {
+        if ("COMPLETED".equals(status)) return GREEN;
+        if ("AVAILABLE".equals(status)) return TEXT_MUTED;
+        if ("FAILED".equals(status)) return RED;
+        return BLUE;
+    }
+
+    private String statusLabel(String status) {
+        if ("COMPLETED".equals(status)) return "Terminee";
+        if ("AVAILABLE".equals(status)) return "Disponible";
+        if ("FAILED".equals(status)) return "Echouee";
+        return "En cours";
+    }
+
+    private String resolveItemName(String itemId) {
+        if (itemId == null || itemId.isEmpty()) return "item inconnu";
+        try {
+            Item item = ForgeRegistries.ITEMS.getValue(new ResourceLocation(itemId));
+            if (item != null) return item.getDescription().getString();
+        } catch (Exception ignored) {
+        }
+        return itemId;
+    }
+
+    private String safeText(String value, String fallback) {
+        return value == null || value.isEmpty() ? fallback : value;
+    }
+
+    private void openFinishCommand() {
+        if (this.minecraft == null || selectedQuest == null) return;
+        String questId = selectedState != null ? selectedState.quest_id : selectedQuest.questId;
+        if (questId == null || questId.isEmpty()) return;
+        this.minecraft.setScreen(new ChatScreen("/finish " + quoteCommandArg(questId) + " "));
+    }
+
+    private void updateFinishButtonPosition(int detailX, int detailWidth) {
+        if (this.finishButton == null) return;
+        this.finishButton.setX(Math.max(detailX, detailX + detailWidth - 88));
+        this.finishButton.setY(49);
+    }
+
+    private void updateFinishButtonState() {
+        if (this.finishButton == null) return;
+        boolean visible = selectedQuest != null && isManualApprovalQuest(selectedQuest);
+        this.finishButton.visible = visible;
+        this.finishButton.active = visible;
+    }
+
+    private void updateRefreshButtonState() {
+        if (this.refreshButton == null) return;
+        this.refreshButton.active = !refreshing;
+        this.refreshButton.setMessage(Component.literal(refreshing ? "\u21BB Updating..." : "\u21BB Update quests"));
+    }
+
+    private boolean isManualApprovalQuest(QuestModel quest) {
+        if (quest == null || quest.objectives == null) return false;
+        for (QuestModel.Objective objective : quest.objectives) {
+            if (objective == null) continue;
+            String type = normalize(objective.type);
+            if (type.contains("construct") || type.contains("rp")) return true;
+        }
+        return false;
+    }
+
+    private String normalize(String value) {
+        return value == null ? "" : value.toLowerCase().replace(" ", "").replace("_", "").replace("-", "");
+    }
+
+    private String quoteCommandArg(String value) {
+        if (value == null) return "\"\"";
+        return "\"" + value.replace("\\", "\\\\").replace("\"", "\\\"") + "\"";
     }
 
     class QuestList extends ObjectSelectionList<QuestEntry> {
         public QuestList(Minecraft mc, int width, int height, int y0, int y1, int itemHeight) {
             super(mc, width, height, y0, y1, itemHeight);
+            this.setRenderBackground(false);
+            this.setRenderTopAndBottom(false);
         }
 
         @Override
         public int getRowWidth() {
-            return 140;
+            return this.width - 12;
         }
-        
+
         public void clear() {
             this.clearEntries();
         }
-        
+
         public void add(QuestEntry entry) {
             this.addEntry(entry);
         }
@@ -237,17 +519,23 @@ public class QuestScreen extends Screen {
 
         @Override
         public void render(GuiGraphics gg, int index, int top, int left, int width, int height, int mouseX, int mouseY, boolean isHovered, float partialTick) {
-            String name = state.questDetails != null ? state.questDetails.name : state.quest_id;
-            int color = 0xFFFFFF;
-            if ("COMPLETED".equals(state.status)) color = 0x00FF00;
-            
+            String name = state.questDetails != null && state.questDetails.name != null ? state.questDetails.name : safeText(state.quest_id, "Quete");
+            boolean selected = QuestScreen.this.list != null && QuestScreen.this.list.getSelected() == this;
+            int color = selected ? TEXT : TEXT_MUTED;
+            int statusColor = statusColor(state.status);
+
             Font fontRenderer = QuestScreen.this.font;
             if (fontRenderer == null) fontRenderer = Minecraft.getInstance().font;
-            
+
             if (fontRenderer != null) {
-                String displayName = fontRenderer.plainSubstrByWidth(name, width - 10);
+                int rowColor = selected ? 0x663E2D1B : (isHovered ? 0x442D2419 : 0x00000000);
+                if (rowColor != 0) gg.fill(left + 1, top + 1, left + width - 1, top + height - 1, rowColor);
+                gg.fill(left + 5, top + 7, left + 10, top + 12, statusColor);
+
+                String displayName = fontRenderer.plainSubstrByWidth(name, width - 24);
                 if (displayName.length() < name.length()) displayName += "...";
-                gg.drawString(fontRenderer, displayName, left + 5, top + 5, color);
+                gg.drawString(fontRenderer, displayName, left + 16, top + 4, color, false);
+                gg.drawString(fontRenderer, statusLabel(state.status), left + 16, top + 15, TEXT_DIM, false);
             }
         }
 
@@ -255,12 +543,15 @@ public class QuestScreen extends Screen {
         public boolean mouseClicked(double mouseX, double mouseY, int button) {
             QuestScreen.this.list.setSelected(this);
             QuestScreen.this.selectedQuest = state.questDetails;
+            QuestScreen.this.selectedState = state;
+            QuestScreen.this.statusMessage = "";
+            QuestScreen.this.updateFinishButtonState();
             return true;
         }
 
         @Override
         public Component getNarration() {
-            return Component.literal(state.quest_id);
+            return Component.literal(safeText(state.quest_id, "quete"));
         }
     }
 }

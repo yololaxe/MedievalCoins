@@ -24,6 +24,10 @@ public class ItemInit {
     // Items pour les torches magiques (pas besoin d'être dans le creative tab car item technique)
     public static final RegistryObject<Item> MAGIC_TORCH = REGISTRY.register("magic_torch",
             () -> new BlockItem(BlockInit.MAGIC_TORCH.get(), new Item.Properties()));
+
+    public static final RegistryObject<Item> PRAYER_LECTERN =
+            CreativeTab.addToTab(REGISTRY.register("prayer_lectern",
+                    () -> new BlockItem(BlockInit.PRAYER_LECTERN.get(), new Item.Properties())));
             
     // Item de verrouillage supprimé
 

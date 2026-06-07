@@ -2,6 +2,7 @@ package fr.renblood.medievalcoins.events;
 
 import fr.renblood.medievalcoins.MedievalCoin;
 import fr.renblood.medievalcoins.api.model.PlayerModel;
+import fr.renblood.medievalcoins.divine.DivineSessionManager;
 import fr.renblood.medievalcoins.network.ApiClient;
 import fr.renblood.medievalcoins.network.PlayerCache;
 import fr.renblood.medievalcoins.network.PlayerStatsUpdateMessage;
@@ -85,10 +86,11 @@ public class PlayerStatsHandler {
         // Récupération de la stat regeneration
         String uuid = player.getGameProfile().getId().toString();
         PlayerModel pm = PlayerCache.getPlayer(uuid);
-        if (pm != null && pm.regeneration > 0) {
+        int regeneration = pm != null ? pm.regeneration + DivineSessionManager.regenerationDelta(player) : 0;
+        if (regeneration > 0) {
             // Formule : 1 PV toutes les (60 / X) secondes
             // En ticks : (60 / X) * 20
-            int intervalTicks = (int) ((60.0 / pm.regeneration) * 20);
+            int intervalTicks = (int) ((60.0 / regeneration) * 20);
             if (intervalTicks < 1) intervalTicks = 1; // Sécurité
 
             if (player.tickCount % intervalTicks == 0) {
@@ -137,6 +139,15 @@ public class PlayerStatsHandler {
         }).start();
     }
 
+    public static void reapplyCachedStats(ServerPlayer player) {
+        PlayerModel pm = PlayerCache.getPlayer(player.getGameProfile().getId().toString());
+        if (pm != null) {
+            applyStats(player, pm);
+        } else {
+            DivineSessionManager.applyModifiers(player);
+        }
+    }
+
     private static void applyStats(ServerPlayer player, PlayerModel pm) {
         // 1. Vie (Life)
         double targetMaxHealth = pm.life;
@@ -167,6 +178,7 @@ public class PlayerStatsHandler {
         // (78 - 100) / 100.0 = -0.22.
         double attackSpeedBonus = (pm.haste - 100) / 100.0;
         updateAttribute(player, Attributes.ATTACK_SPEED, HASTE_MODIFIER_ID, "RP Haste Bonus", attackSpeedBonus, AttributeModifier.Operation.MULTIPLY_TOTAL);
+        DivineSessionManager.applyModifiers(player);
 
         if (MedievalCoin.DEBUG_MODE) {
             MedievalCoin.LOGGER.info("Updated stats for {}: Life={}, Str={}, Spd={}, Reach={}, Res={}, Haste={}",

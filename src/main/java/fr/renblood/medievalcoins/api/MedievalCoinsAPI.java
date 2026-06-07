@@ -39,9 +39,21 @@ public class MedievalCoinsAPI {
     }
 
     public static List<NpcSpawnModel> getNpcSpawns(String worldName) {
+        return getNpcSpawns(worldName, true);
+    }
+
+    /**
+     * Returns NPC spawns for synchronization.
+     *
+     * @param worldName world/dimension filter, or {@code null} for every world
+     * @param includeInactive includes inactive spawns so consumers can remove stale NPCs
+     */
+    public static List<NpcSpawnModel> getNpcSpawns(String worldName, boolean includeInactive) {
         try {
-            if (MedievalCoin.DEBUG_MODE) MedievalCoin.LOGGER.info("API: Fetching NPC Spawns for world: " + worldName);
-            List<NpcSpawnModel> list = ApiClient.getNpcSpawns(worldName);
+            if (MedievalCoin.DEBUG_MODE) {
+                MedievalCoin.LOGGER.info("API: Fetching NPC Spawns for world={}, includeInactive={}", worldName, includeInactive);
+            }
+            List<NpcSpawnModel> list = ApiClient.getNpcSpawns(worldName, includeInactive);
             if (MedievalCoin.DEBUG_MODE) MedievalCoin.LOGGER.info("API: Fetched " + list.size() + " spawns.");
             return list;
         } catch (Exception e) {
@@ -51,7 +63,7 @@ public class MedievalCoinsAPI {
     }
 
     public static List<NpcSpawnModel> getNpcSpawns() {
-        return getNpcSpawns(null);
+        return getNpcSpawns(null, true);
     }
 
     public static boolean createNpc(NpcModel npc) {
@@ -67,6 +79,10 @@ public class MedievalCoinsAPI {
     }
 
     public static boolean createNpcSpawn(NpcSpawnModel spawn) {
+        if (spawn == null || !spawn.hasStableId()) {
+            MedievalCoin.LOGGER.error("Failed to create NPC spawn: spawnId is required and must be stable");
+            return false;
+        }
         try {
             if (MedievalCoin.DEBUG_MODE) MedievalCoin.LOGGER.info("API: Creating NPC Spawn for NPC: " + spawn.npcId + " at " + spawn.x + "," + spawn.y + "," + spawn.z);
             boolean result = ApiClient.createNpcSpawn(spawn);

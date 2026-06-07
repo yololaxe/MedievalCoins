@@ -13,4 +13,11 @@
     </annotationProcessing>
     <bytecodeTargetLevel target="17" />
   </component>
+  <component name="JavacSettings">
+    <option name="ADDITIONAL_OPTIONS_OVERRIDE">
+      <module name="MedievalCoins" options="-AoutRefMapFile=medieval_coins.refmap.json" />
+      <module name="MedievalCoins.test" options="-AoutRefMapFile=medieval_coins.refmap.json" />
+      <module name="fr.renblood.MedievalCoins.main" options="-AoutRefMapFile=medieval_coins.refmap.json" />
+    </option>
+  </component>
 </project>

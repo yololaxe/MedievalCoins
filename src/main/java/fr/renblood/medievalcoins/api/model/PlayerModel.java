@@ -15,6 +15,9 @@ public class PlayerModel {
             .registerTypeAdapter(JobExperience.class, new JobExperienceAdapter())
             .create();
 
+    @SerializedName(value = "id", alternate = {"_id", "player_id", "playerId"})
+    public String id;
+
     @SerializedName("id_minecraft")
     public String id_minecraft;
 
