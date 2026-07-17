@@ -1,6 +1,7 @@
 package fr.renblood.medievalcoins.client.gui;
 
 import fr.renblood.medievalcoins.api.model.PlayerQuestStateModel;
+import fr.renblood.medievalcoins.api.model.PlayerModel;
 import fr.renblood.medievalcoins.api.model.QuestModel;
 import fr.renblood.medievalcoins.network.ApiClient;
 import net.minecraft.client.Minecraft;
@@ -24,6 +25,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.Set;
+import java.util.HashSet;
 
 @OnlyIn(Dist.CLIENT)
 public class QuestScreen extends Screen {
@@ -41,6 +44,7 @@ public class QuestScreen extends Screen {
     private static final int GREEN = 0xFF75D06A;
     private static final int BLUE = 0xFF73C7E8;
     private static final int RED = 0xFFE37B63;
+    private static final int AUTO_REFRESH_TICKS = 20 * 60;
 
     private String currentCategory = "Main";
     private QuestList list;
@@ -49,12 +53,23 @@ public class QuestScreen extends Screen {
     private Button finishButton;
     private Button refreshButton;
     private boolean refreshing;
+    private int autoRefreshTicks;
     private String statusMessage = "Cliquez sur le bouton de mise a jour pour recuperer les quetes.";
 
     private static final Map<String, List<PlayerQuestStateModel>> QUEST_CACHE = new ConcurrentHashMap<>();
+    private static final Map<String, Set<Integer>> OBJECTIVE_PROGRESS = new ConcurrentHashMap<>();
+
+    public static void updateObjectiveProgress(Map<String, List<Integer>> progress) {
+        OBJECTIVE_PROGRESS.clear();
+        if (progress == null) return;
+        progress.forEach((questId, indexes) -> OBJECTIVE_PROGRESS.put(
+                questId,
+                indexes == null ? Set.of() : new HashSet<>(indexes)
+        ));
+    }
 
     public QuestScreen() {
-        super(Component.literal("Quetes"));
+        super(Component.translatable("screen.medieval_coins.quests"));
     }
 
     @Override
@@ -81,13 +96,17 @@ public class QuestScreen extends Screen {
         this.list.setLeftPos(18);
         this.addRenderableWidget(this.list);
 
-        this.finishButton = this.addRenderableWidget(Button.builder(Component.literal("/finish"), b -> openFinishCommand())
+        this.finishButton = this.addRenderableWidget(Button.builder(Component.translatable("gui.medieval_coins.quests.finish"), b -> openFinishCommand())
                 .bounds(this.width - 112, 49, 88, 20)
                 .build());
         this.finishButton.visible = false;
 
-        this.refreshButton = this.addRenderableWidget(Button.builder(Component.literal("\u21BB Update quests"), b -> refreshCurrentCategory())
+        this.refreshButton = this.addRenderableWidget(Button.builder(Component.translatable("gui.medieval_coins.quests.refresh"), b -> refreshCurrentCategory())
                 .bounds(this.width - 126, 18, 108, 20)
+                .build());
+
+        this.addRenderableWidget(Button.builder(Component.translatable("gui.medieval_coins.quests.completed"), b -> loadCategory("Completed"))
+                .bounds(this.width - 136, this.height - 42, 118, 20)
                 .build());
 
         loadCategory(currentCategory);
@@ -96,6 +115,15 @@ public class QuestScreen extends Screen {
     @Override
     public boolean isPauseScreen() {
         return false;
+    }
+
+    @Override
+    public void tick() {
+        super.tick();
+        if (++autoRefreshTicks >= AUTO_REFRESH_TICKS) {
+            autoRefreshTicks = 0;
+            refreshCurrentCategory(false);
+        }
     }
 
     private void loadCategory(String category) {
@@ -111,19 +139,23 @@ public class QuestScreen extends Screen {
             return;
         }
 
-        this.statusMessage = "Categorie non chargee. Cliquez sur Update quests.";
+        refreshCurrentCategory();
     }
 
     private void refreshCurrentCategory() {
+        refreshCurrentCategory(true);
+    }
+
+    private void refreshCurrentCategory(boolean clearList) {
         if (refreshing) return;
 
         String category = currentCategory;
         refreshing = true;
         statusMessage = "Mise a jour des quetes...";
         updateRefreshButtonState();
-        if (this.list != null) this.list.clear();
+        if (clearList && this.list != null) this.list.clear();
 
-        new Thread(() -> {
+        fr.renblood.medievalcoins.network.ApiExecutor.execute(() -> {
             Minecraft mc = Minecraft.getInstance();
             try {
                 if (mc.player == null) {
@@ -132,12 +164,22 @@ public class QuestScreen extends Screen {
                 }
 
                 String uuid = mc.player.getGameProfile().getId().toString();
-                List<PlayerQuestStateModel> quests = ApiClient.getActiveQuests(uuid, category);
+                List<PlayerQuestStateModel> quests;
+                if ("Completed".equals(category)) {
+                    PlayerModel profile = ApiClient.getPlayer(uuid);
+                    String playerId = profile != null && profile.id != null ? profile.id : uuid;
+                    quests = ApiClient.getPlayerQuests(playerId);
+                    if (quests == null) quests = new ArrayList<>();
+                    quests.removeIf(state -> state == null || !"COMPLETED".equalsIgnoreCase(state.status));
+                    attachQuestDetails(quests, "");
+                } else {
+                    quests = ApiClient.getActiveQuests(uuid, category);
+                }
                 if (quests == null) quests = new ArrayList<>();
 
-                if (quests.isEmpty()) {
+                if (quests.isEmpty() && !"Completed".equals(category)) {
                     quests = buildStatesFromAllQuests(category);
-                } else {
+                } else if (!"Completed".equals(category)) {
                     attachQuestDetails(quests, category);
                 }
 
@@ -149,7 +191,7 @@ public class QuestScreen extends Screen {
                 String message = e.getMessage() == null ? e.getClass().getSimpleName() : e.getMessage();
                 mc.execute(() -> finishRefresh(category, null, "Erreur API: " + message));
             }
-        }, "MedievalCoins-QuestRefresh").start();
+        });
     }
 
     private void finishRefresh(String category, List<PlayerQuestStateModel> quests, String error) {
@@ -293,12 +335,14 @@ public class QuestScreen extends Screen {
         gg.drawCenteredString(fontRenderer, "Journal de quetes", this.width / 2, 8, GOLD);
 
         drawPanel(gg, listLeft - 4, listTop - 4, listLeft + listWidth + 4, listBottom + 4, PANEL_SOFT);
-        gg.drawString(fontRenderer, "Categorie", listLeft, 34, TEXT_DIM, false);
+        gg.drawString(fontRenderer, Component.translatable("gui.medieval_coins.quests.category"), listLeft, 34, TEXT_DIM, false);
         gg.drawString(fontRenderer, currentCategory, listLeft + 58, 34, GOLD, false);
 
         drawPanel(gg, detailLeft, listTop - 4, detailRight, listBottom + 4, PANEL_SOFT);
         gg.fill(detailLeft + 1, listTop - 3, detailRight - 1, listTop + 18, 0x66302017);
-        gg.drawString(fontRenderer, selectedQuest != null ? "Details de la quete" : "Journal", detailLeft + 12, listTop + 3, TEXT_MUTED, false);
+        gg.drawString(fontRenderer, selectedQuest != null
+                ? Component.translatable("gui.medieval_coins.quests.details")
+                : Component.translatable("screen.medieval_coins.quests"), detailLeft + 12, listTop + 3, TEXT_MUTED, false);
     }
 
     private void drawPanel(GuiGraphics gg, int left, int top, int right, int bottom, int color) {
@@ -311,7 +355,8 @@ public class QuestScreen extends Screen {
 
     private void renderQuestDetails(GuiGraphics gg, Font fontRenderer, int detailX, int detailY, int detailWidth) {
         String playerName = this.minecraft.player != null ? this.minecraft.player.getName().getString() : "Joueur";
-        String npcName = selectedQuest.npc != null ? selectedQuest.npc : "PNJ";
+        String npcName = selectedQuest.npcName != null ? selectedQuest.npcName
+                : selectedQuest.npc != null ? selectedQuest.npc : "PNJ";
         String questName = selectedQuest.name != null ? selectedQuest.name : "Quete sans nom";
         String questId = selectedState != null ? selectedState.quest_id : selectedQuest.questId;
 
@@ -332,8 +377,9 @@ public class QuestScreen extends Screen {
         detailY = renderSectionTitle(gg, fontRenderer, "Objectifs", detailX, detailY, detailWidth, BLUE);
 
         if (selectedQuest.objectives != null && !selectedQuest.objectives.isEmpty()) {
-            for (QuestModel.Objective obj : selectedQuest.objectives) {
-                detailY = renderObjective(gg, fontRenderer, obj, detailX, detailY, detailWidth, playerName, npcName);
+            for (int index = 0; index < selectedQuest.objectives.size(); index++) {
+                QuestModel.Objective obj = selectedQuest.objectives.get(index);
+                detailY = renderObjective(gg, fontRenderer, obj, index, detailX, detailY, detailWidth, playerName, npcName);
             }
         } else {
             detailY = drawBulletLine(gg, fontRenderer, "Aucun objectif renseigne", detailX, detailY, detailWidth, TEXT_DIM);
@@ -369,7 +415,7 @@ public class QuestScreen extends Screen {
         gg.fill(x, y + 1, x + 6, y + 7, statusColor);
         gg.drawString(fontRenderer, statusLabel(status), x + 10, y, statusColor, false);
 
-        String meta = safeText(selectedQuest.npc, "PNJ non renseigne");
+        String meta = safeText(selectedQuest.npcName, safeText(selectedQuest.npc, "PNJ non renseigne"));
         if (selectedQuest.type != null && !selectedQuest.type.isEmpty()) meta += "  |  " + selectedQuest.type;
         gg.drawString(fontRenderer, fontRenderer.plainSubstrByWidth(meta, width - 86), x + 86, y, TEXT_DIM, false);
     }
@@ -381,26 +427,41 @@ public class QuestScreen extends Screen {
         return y + 14;
     }
 
-    private int renderObjective(GuiGraphics gg, Font fontRenderer, QuestModel.Objective obj, int x, int y, int width, String playerName, String npcName) {
+    private int renderObjective(GuiGraphics gg, Font fontRenderer, QuestModel.Objective obj, int index, int x, int y, int width, String playerName, String npcName) {
+        String questId = selectedState != null ? selectedState.quest_id : selectedQuest.questId;
+        boolean completed = selectedState != null && "COMPLETED".equalsIgnoreCase(selectedState.status)
+                || OBJECTIVE_PROGRESS.getOrDefault(questId, Set.of()).contains(index);
+        String prefix = completed ? "[OK] " : "[ ] ";
+        int color = completed ? GREEN : TEXT_MUTED;
+
         if (obj.description != null && !obj.description.isEmpty()) {
             String objDesc = obj.description.replace("{player}", playerName).replace("{npc}", npcName);
-            return drawBulletLine(gg, fontRenderer, objDesc, x, y, width, TEXT_MUTED);
+            y = drawBulletLine(gg, fontRenderer, prefix + objDesc, x, y, width, color);
         }
 
         if ("ITEM".equals(obj.type) && obj.items != null) {
             for (QuestModel.ItemRequirement req : obj.items) {
-                y = drawBulletLine(gg, fontRenderer, "Recolter " + req.count + "x " + resolveItemName(req.itemId), x, y, width, TEXT_MUTED);
+                y = drawBulletLine(gg, fontRenderer, prefix + "Ramener " + req.count + "x " + resolveItemName(req.itemId), x, y, width, color);
             }
             return y;
         }
+        if (obj.description != null && !obj.description.isEmpty()) return y;
         if ("LOCATION".equals(obj.type)) {
-            return drawBulletLine(gg, fontRenderer, "Se rendre en " + safeText(obj.coord, "position inconnue"), x, y, width, TEXT_MUTED);
+            return drawBulletLine(gg, fontRenderer, prefix + "Se rendre en " + safeText(obj.coord, "position inconnue"), x, y, width, color);
         }
         if ("TALK".equals(obj.type)) {
-            return drawBulletLine(gg, fontRenderer, "Parler a " + safeText(obj.target, "PNJ"), x, y, width, TEXT_MUTED);
+            return drawBulletLine(gg, fontRenderer, prefix + "Parler au PNJ " + safeText(obj.getTargetNpcId(), "inconnu"), x, y, width, color);
+        }
+        if ("CONSTRUCTION".equalsIgnoreCase(obj.type) || "BUILD".equalsIgnoreCase(obj.type)) {
+            return drawBulletLine(gg, fontRenderer, prefix + "Construction", x, y, width, color);
+        }
+        if ("RP".equalsIgnoreCase(obj.type) || "ROLEPLAY".equalsIgnoreCase(obj.type)
+                || "ROLE_PLAY".equalsIgnoreCase(obj.type)) {
+            return drawBulletLine(gg, fontRenderer, prefix + "RP", x, y, width, color);
         }
 
-        return drawBulletLine(gg, fontRenderer, safeText(obj.type, "Objectif") + " " + safeText(obj.target, ""), x, y, width, TEXT_MUTED);
+        return drawBulletLine(gg, fontRenderer, prefix + safeText(obj.type, "Objectif") + " "
+                + safeText(obj.getTargetNpcId(), ""), x, y, width, color);
     }
 
     private int drawBulletLine(GuiGraphics gg, Font fontRenderer, String text, int x, int y, int width, int color) {
@@ -448,7 +509,7 @@ public class QuestScreen extends Screen {
         if (this.minecraft == null || selectedQuest == null) return;
         String questId = selectedState != null ? selectedState.quest_id : selectedQuest.questId;
         if (questId == null || questId.isEmpty()) return;
-        this.minecraft.setScreen(new ChatScreen("/finish " + quoteCommandArg(questId) + " "));
+        this.minecraft.setScreen(new ChatScreen("/mc quest finish " + quoteCommandArg(questId) + " "));
     }
 
     private void updateFinishButtonPosition(int detailX, int detailWidth) {
@@ -467,7 +528,9 @@ public class QuestScreen extends Screen {
     private void updateRefreshButtonState() {
         if (this.refreshButton == null) return;
         this.refreshButton.active = !refreshing;
-        this.refreshButton.setMessage(Component.literal(refreshing ? "\u21BB Updating..." : "\u21BB Update quests"));
+        this.refreshButton.setMessage(Component.translatable(refreshing
+                ? "gui.medieval_coins.quests.refreshing"
+                : "gui.medieval_coins.quests.refresh"));
     }
 
     private boolean isManualApprovalQuest(QuestModel quest) {

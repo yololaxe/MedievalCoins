@@ -1,10 +1,15 @@
 package fr.renblood.medievalcoins;
 
 import fr.renblood.medievalcoins.creative.CreativeTab;
+import fr.renblood.medievalcoins.api.service.XpReferenceService;
 import fr.renblood.medievalcoins.init.BlockInit;
+import fr.renblood.medievalcoins.init.BlockEntityInit;
 import fr.renblood.medievalcoins.init.ItemInit;
 import fr.renblood.medievalcoins.init.MedievalCoinsModMenus;
 import fr.renblood.medievalcoins.item.Coins;
+import fr.renblood.medievalcoins.land.LandConfig;
+import fr.renblood.medievalcoins.land.LandStorage;
+import fr.renblood.medievalcoins.market.service.MarketSyncService;
 import fr.renblood.medievalcoins.network.*;
 import fr.renblood.medievalcoins.procedures.OpenDepositGuiMessage;
 
@@ -12,6 +17,8 @@ import fr.renblood.medievalcoins.procedures.OpenWithdrawGuiMessage;
 import fr.renblood.medievalcoins.tree.network.FertilizeStateMessage;
 import fr.renblood.medievalcoins.tree.network.FertilizerSlotMessage;
 import fr.renblood.medievalcoins.tree.network.SpecialSlotKeyMessage;
+import fr.renblood.medievalcoins.tree.network.AbilityStatusMessage;
+import fr.renblood.medievalcoins.tree.network.RequestAbilityStatusMessage;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.GameRules;
@@ -61,6 +68,7 @@ public class MedievalCoin {
         Coins.register(modBus);
         ItemInit.REGISTRY.register(modBus);
         BlockInit.REGISTRY.register(modBus);
+        BlockEntityInit.REGISTRY.register(modBus);
         CreativeTab.TABS.register(modBus);
         ENTITY_TYPES.register(modBus);
         MedievalCoinsModMenus.REGISTRY.register(modBus);
@@ -200,6 +208,51 @@ public class MedievalCoin {
 
         PACKET_HANDLER.registerMessage(
                 messageID++,
+                QuestProgressMessage.class,
+                QuestProgressMessage::encode,
+                QuestProgressMessage::decode,
+                QuestProgressMessage::handle,
+                Optional.of(NetworkDirection.PLAY_TO_CLIENT)
+        );
+
+        PACKET_HANDLER.registerMessage(
+                messageID++,
+                OpenNpcDialogueMessage.class,
+                OpenNpcDialogueMessage::encode,
+                OpenNpcDialogueMessage::decode,
+                OpenNpcDialogueMessage::handle,
+                Optional.of(NetworkDirection.PLAY_TO_CLIENT)
+        );
+
+        PACKET_HANDLER.registerMessage(
+                messageID++,
+                OpenNpcQuestInteractionsMessage.class,
+                OpenNpcQuestInteractionsMessage::encode,
+                OpenNpcQuestInteractionsMessage::decode,
+                OpenNpcQuestInteractionsMessage::handle,
+                Optional.of(NetworkDirection.PLAY_TO_CLIENT)
+        );
+
+        PACKET_HANDLER.registerMessage(
+                messageID++,
+                NpcQuestActionMessage.class,
+                NpcQuestActionMessage::encode,
+                NpcQuestActionMessage::decode,
+                NpcQuestActionMessage::handle,
+                Optional.of(NetworkDirection.PLAY_TO_SERVER)
+        );
+
+        PACKET_HANDLER.registerMessage(
+                messageID++,
+                NpcQuestAvailabilityMessage.class,
+                NpcQuestAvailabilityMessage::encode,
+                NpcQuestAvailabilityMessage::decode,
+                NpcQuestAvailabilityMessage::handle,
+                Optional.of(NetworkDirection.PLAY_TO_CLIENT)
+        );
+
+        PACKET_HANDLER.registerMessage(
+                messageID++,
                 OpenPrayerScreenMessage.class,
                 OpenPrayerScreenMessage::encode,
                 OpenPrayerScreenMessage::decode,
@@ -213,6 +266,87 @@ public class MedievalCoin {
                 PrayerSuccessMessage::encode,
                 PrayerSuccessMessage::decode,
                 PrayerSuccessMessage::handle,
+                Optional.of(NetworkDirection.PLAY_TO_SERVER)
+        );
+
+        PACKET_HANDLER.registerMessage(
+                messageID++,
+                RequestAbilityStatusMessage.class,
+                RequestAbilityStatusMessage::encode,
+                RequestAbilityStatusMessage::decode,
+                RequestAbilityStatusMessage::handle,
+                Optional.of(NetworkDirection.PLAY_TO_SERVER)
+        );
+
+        PACKET_HANDLER.registerMessage(
+                messageID++,
+                AbilityStatusMessage.class,
+                AbilityStatusMessage::encode,
+                AbilityStatusMessage::decode,
+                AbilityStatusMessage::handle,
+                Optional.of(NetworkDirection.PLAY_TO_CLIENT)
+        );
+
+        PACKET_HANDLER.registerMessage(
+                messageID++,
+                DepositAllCoinsMessage.class,
+                DepositAllCoinsMessage::encode,
+                DepositAllCoinsMessage::decode,
+                DepositAllCoinsMessage::handle,
+                Optional.of(NetworkDirection.PLAY_TO_SERVER)
+        );
+
+        PACKET_HANDLER.registerMessage(
+                messageID++,
+                MerchantCounterUpdateMessage.class,
+                MerchantCounterUpdateMessage::encode,
+                MerchantCounterUpdateMessage::decode,
+                MerchantCounterUpdateMessage::handle,
+                Optional.of(NetworkDirection.PLAY_TO_SERVER)
+        );
+
+        PACKET_HANDLER.registerMessage(
+                messageID++,
+                MerchantCounterPurchaseMessage.class,
+                MerchantCounterPurchaseMessage::encode,
+                MerchantCounterPurchaseMessage::decode,
+                MerchantCounterPurchaseMessage::handle,
+                Optional.of(NetworkDirection.PLAY_TO_SERVER)
+        );
+
+        PACKET_HANDLER.registerMessage(
+                messageID++,
+                MerchantCounterSellMessage.class,
+                MerchantCounterSellMessage::encode,
+                MerchantCounterSellMessage::decode,
+                MerchantCounterSellMessage::handle,
+                Optional.of(NetworkDirection.PLAY_TO_SERVER)
+        );
+
+        PACKET_HANDLER.registerMessage(
+                messageID++,
+                MerchantCounterHistoryRequestMessage.class,
+                MerchantCounterHistoryRequestMessage::encode,
+                MerchantCounterHistoryRequestMessage::decode,
+                MerchantCounterHistoryRequestMessage::handle,
+                Optional.of(NetworkDirection.PLAY_TO_SERVER)
+        );
+
+        PACKET_HANDLER.registerMessage(
+                messageID++,
+                MerchantCounterHistoryResponseMessage.class,
+                MerchantCounterHistoryResponseMessage::encode,
+                MerchantCounterHistoryResponseMessage::decode,
+                MerchantCounterHistoryResponseMessage::handle,
+                Optional.of(NetworkDirection.PLAY_TO_CLIENT)
+        );
+
+        PACKET_HANDLER.registerMessage(
+                messageID++,
+                PlayerMarketOwnerActionMessage.class,
+                PlayerMarketOwnerActionMessage::encode,
+                PlayerMarketOwnerActionMessage::decode,
+                PlayerMarketOwnerActionMessage::handle,
                 Optional.of(NetworkDirection.PLAY_TO_SERVER)
         );
 
@@ -236,6 +370,12 @@ public class MedievalCoin {
     @SubscribeEvent
     public void onServerStarting(ServerStartingEvent event) {
         event.getServer().getGameRules().getRule(GameRules.RULE_NATURAL_REGENERATION).set(false, event.getServer());
+        MarketSyncService.initialize();
+        XpReferenceService.initialize();
+        LandConfig.reload();
+        LandStorage.reloadRegistry();
+        MarketSyncService.reloadPricesFromBackend();
+        XpReferenceService.reloadAsync();
     }
 
     @SubscribeEvent

@@ -7,6 +7,10 @@ import fr.renblood.medievalcoins.inventory.banker.ChangeGUIMenu;
 import fr.renblood.medievalcoins.inventory.banker.DepositGuiMenu;
 import fr.renblood.medievalcoins.inventory.banker.WithdrawGuiMenu;
 import fr.renblood.medievalcoins.inventory.purse.PurseContainer;
+import fr.renblood.medievalcoins.land.LandMapMenu;
+import fr.renblood.medievalcoins.market.counter.MerchantCounterAdminMenu;
+import fr.renblood.medievalcoins.market.counter.MerchantCounterMenu;
+import fr.renblood.medievalcoins.market.counter.MerchantCounterOwnerMenu;
 
 import net.minecraft.world.inventory.MenuType;
 import net.minecraftforge.common.extensions.IForgeMenuType;
@@ -41,4 +45,17 @@ public class MedievalCoinsModMenus {
 			REGISTRY.register("purse_container",
 					() -> IForgeMenuType.create(PurseContainer::fromNetwork)
 			);
+
+	public static final RegistryObject<MenuType<MerchantCounterMenu>> MERCHANT_COUNTER =
+			REGISTRY.register("merchant_counter", () -> IForgeMenuType.create(MerchantCounterMenu::new));
+
+	public static final RegistryObject<MenuType<MerchantCounterOwnerMenu>> MERCHANT_COUNTER_OWNER =
+			REGISTRY.register("merchant_counter_owner", () -> IForgeMenuType.create(MerchantCounterOwnerMenu::new));
+
+	public static final RegistryObject<MenuType<MerchantCounterAdminMenu>> MERCHANT_COUNTER_ADMIN =
+			REGISTRY.register("merchant_counter_admin", () -> IForgeMenuType.create(MerchantCounterAdminMenu::new));
+
+	public static final RegistryObject<MenuType<LandMapMenu>> LAND_MAP =
+			REGISTRY.register("land_map", () -> IForgeMenuType.create(LandMapMenu::new));
+
 }

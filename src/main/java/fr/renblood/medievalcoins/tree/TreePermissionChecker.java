@@ -1,7 +1,7 @@
 package fr.renblood.medievalcoins.tree;
 
 import fr.renblood.medievalcoins.api.model.PlayerModel;
-import fr.renblood.medievalcoins.network.ApiClient;
+import fr.renblood.medievalcoins.network.PlayerCache;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerPlayer;
 
@@ -9,7 +9,7 @@ public class TreePermissionChecker {
 
     public static boolean hasUnlocked(ServerPlayer player, TreeAbility ability) {
         try {
-            fr.renblood.medievalcoins.api.model.PlayerModel model = ApiClient.getPlayer(player.getStringUUID());
+            fr.renblood.medievalcoins.api.model.PlayerModel model = PlayerCache.getPlayer(player.getStringUUID());
             if (model == null || model.experiences == null || model.experiences.jobs == null) {
                 player.sendSystemMessage(Component.literal("❌ Impossible de récupérer vos données joueur."));
                 return false;

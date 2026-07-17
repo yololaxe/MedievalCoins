@@ -1,16 +1,19 @@
 {
   "type": "minecraft:crafting_shaped",
   "pattern": [
-    " L ",
+    "ILI",
     "LCL",
     "LLL"
   ],
   "key": {
+    "I": {
+      "item": "minecraft:iron_nugget"
+    },
     "L": {
       "item": "minecraft:leather"
     },
     "C": {
-      "item": "minecraft:chest"
+      "item": "medieval_coins:bronze_coin"
     }
   },
   "result": {

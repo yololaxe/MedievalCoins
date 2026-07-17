@@ -97,10 +97,13 @@ public class SubmitDepositMessage {
             int totalValue = (int) totalValueLong;
 
             // 4) Vider les slots de dépôt
+            ItemStack[] depositedStacks = new ItemStack[4];
             for (int i = 0; i < 4; i++) {
+                depositedStacks[i] = inv.getItem(i).copy();
                 inv.setItem(i, ItemStack.EMPTY);
             }
 
+            ApiExecutor.execute(() -> {
             try {
                 // 5) Charger ou récupérer le PlayerModel
                 String mcUuid = sender.getGameProfile().getId().toString();
@@ -112,25 +115,15 @@ public class SubmitDepositMessage {
 
                 // 6) Appel API pour déposer et récupérer le nouveau solde
                 int newBalance = ApiClient.deposit(pm.id_minecraft, totalValue);
-                pm.money        = newBalance;
-                PlayerCache.updatePlayer(pm);
-
-                // 7) Envoyer la mise à jour au client (MoneyUpdateMessage est spécifique à l'argent, on garde pour compatibilité)
-                MoneyUpdateMessage update = new MoneyUpdateMessage(mcUuid, newBalance);
-                MedievalCoin.PACKET_HANDLER.send(
-                        PacketDistributor.PLAYER.with(() -> sender),
-                        update
-                );
-                
-                // 7b) Envoyer le PlayerModel complet pour mettre à jour le cache client global
-                MedievalCoin.PACKET_HANDLER.send(
-                        PacketDistributor.PLAYER.with(() -> sender),
-                        new PlayerStatsUpdateMessage(pm)
-                );
-
-                // 8) Ré-ouvrir le GUI du banquier à la même position
+                PlayerModel updatedModel = pm;
                 BlockPos reopenPos = depositMenu.getPos();
-
+                sender.getServer().execute(() -> {
+                updatedModel.money = newBalance;
+                PlayerCache.updatePlayer(updatedModel);
+                MedievalCoin.PACKET_HANDLER.send(PacketDistributor.PLAYER.with(() -> sender),
+                        new MoneyUpdateMessage(mcUuid, newBalance));
+                MedievalCoin.PACKET_HANDLER.send(PacketDistributor.PLAYER.with(() -> sender),
+                        new PlayerStatsUpdateMessage(updatedModel));
                 NetworkHooks.openScreen(
                         sender,
                         new MenuProvider() {
@@ -148,22 +141,26 @@ public class SubmitDepositMessage {
                         },
                         buf -> buf.writeBlockPos(reopenPos)
                 );
-
-                // 9) Confirmation en chat
-                sender.sendSystemMessage(
-                        Component.translatable("chat.medieval_coins.deposit_success", totalValue)
-                );
+                sender.sendSystemMessage(Component.translatable("chat.medieval_coins.deposit_success", totalValue));
+                });
 
                 MedievalCoin.LOGGER.info(
                         "Deposit of {} value for {} succeeded, new balance = {}",
                         totalValue, mcUuid, newBalance
                 );
             } catch (Exception e) {
+                sender.getServer().execute(() -> {
+                    for (ItemStack stack : depositedStacks) {
+                        if (!stack.isEmpty() && !sender.getInventory().add(stack)) sender.drop(stack, false);
+                    }
+                    sender.sendSystemMessage(Component.translatable("chat.medieval_coins.deposit_error"));
+                });
                 MedievalCoin.LOGGER.error(
                         "Failed to deposit for " + sender.getGameProfile().getId(),
                         e
                 );
             }
+            });
         });
         ctx.setPacketHandled(true);
     }

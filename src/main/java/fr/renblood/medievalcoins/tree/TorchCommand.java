@@ -26,11 +26,15 @@ public class TorchCommand {
 
     public static final Set<UUID> activePlayers = new HashSet<>();
 
+    public static boolean isActive(UUID id) {
+        return activePlayers.contains(id);
+    }
+
     @SubscribeEvent
     public static void onRegisterCommands(RegisterCommandsEvent evt) {
         CommandDispatcher<CommandSourceStack> d = evt.getDispatcher();
 
-        d.register(Commands.literal("torch")
+        d.register(Commands.literal("mc").then(Commands.literal("ability").then(Commands.literal("torch")
                 .requires(src -> src.hasPermission(0))
                 .executes(c -> {
                     CommandSourceStack src = c.getSource();
@@ -66,7 +70,7 @@ public class TorchCommand {
                     // On réutilise le message d'état du HUD (qui sert pour le slot spécial en général)
                     MedievalCoin.PACKET_HANDLER.send(PacketDistributor.PLAYER.with(() -> player), new FertilizeStateMessage(isActive));
                     return 1;
-                }));
+                }))));
     }
 
     private static void giveInfiniteTorch(ServerPlayer player) {

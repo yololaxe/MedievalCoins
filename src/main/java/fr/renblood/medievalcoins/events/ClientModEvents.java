@@ -11,6 +11,10 @@ import fr.renblood.medievalcoins.inventory.banker.ChangeGUIScreen;
 import fr.renblood.medievalcoins.inventory.banker.DepositGuiScreen;
 import fr.renblood.medievalcoins.inventory.banker.WithdrawGuiScreen;
 import fr.renblood.medievalcoins.inventory.purse.PurseScreen;
+import fr.renblood.medievalcoins.land.LandMapScreen;
+import fr.renblood.medievalcoins.market.counter.MerchantCounterAdminScreen;
+import fr.renblood.medievalcoins.market.counter.MerchantCounterOwnerScreen;
+import fr.renblood.medievalcoins.market.counter.MerchantCounterScreen;
 import net.minecraft.client.gui.screens.MenuScreens;
 import net.minecraft.client.renderer.ItemBlockRenderTypes;
 import net.minecraft.client.renderer.RenderType;
@@ -41,6 +45,10 @@ public class ClientModEvents {
             MenuScreens.register(MedievalCoinsModMenus.DEPOSIT_MENU.get(), DepositGuiScreen::new);
             MenuScreens.register(MedievalCoinsModMenus.PURSE_CONTAINER.get(), PurseScreen::new);
             MenuScreens.register(MedievalCoinsModMenus.WITHDRAW_MENU.get(), WithdrawGuiScreen::new);
+            MenuScreens.register(MedievalCoinsModMenus.LAND_MAP.get(), LandMapScreen::new);
+            MenuScreens.register(MedievalCoinsModMenus.MERCHANT_COUNTER.get(), MerchantCounterScreen::new);
+            MenuScreens.register(MedievalCoinsModMenus.MERCHANT_COUNTER_OWNER.get(), MerchantCounterOwnerScreen::new);
+            MenuScreens.register(MedievalCoinsModMenus.MERCHANT_COUNTER_ADMIN.get(), MerchantCounterAdminScreen::new);
             
             // Définit le type de rendu CUTOUT pour les torches magiques (transparence)
             ItemBlockRenderTypes.setRenderLayer(BlockInit.MAGIC_TORCH.get(), RenderType.cutout());

@@ -43,8 +43,10 @@ public class NpcSpawnModel {
 
     public List<String> dialogue;
 
-    @SerializedName(value = "quest_ids", alternate = {"questIds"})
-    public List<String> questIds;
+    @SerializedName(value = "quest_links", alternate = {"questLinks"})
+    public List<QuestLinkModel> questLinks;
+
+    public Map<String, Object> implementation;
 
     public boolean hasStableId() {
         return spawnId != null && !spawnId.trim().isEmpty();

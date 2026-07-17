@@ -13,7 +13,6 @@ import net.minecraftforge.fml.common.Mod;
 @Mod.EventBusSubscriber
 public class TimeCommand {
 
-    @SubscribeEvent
     public static void onRegisterCommands(RegisterCommandsEvent evt) {
         CommandDispatcher<CommandSourceStack> d = evt.getDispatcher();
 

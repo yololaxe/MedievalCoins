@@ -31,7 +31,7 @@ public class UnbarkCommand {
     public static void onRegisterCommands(RegisterCommandsEvent evt) {
         CommandDispatcher<CommandSourceStack> d = evt.getDispatcher();
 
-        d.register(Commands.literal("unbark")
+        d.register(Commands.literal("mc").then(Commands.literal("ability").then(Commands.literal("unbark")
                 .requires(src -> src.hasPermission(0)) // accessible à tous
                 .executes(c -> {
                     if (isOnCooldown(c.getSource())) return 0;
@@ -101,7 +101,7 @@ public class UnbarkCommand {
 
                     src.sendSuccess(() -> Component.literal("✅ " + maxTransformable + " bûche(s) écorcée(s) !"), true);
                     return 1;
-                }));
+                }))));
     }
 
     private static boolean isOnCooldown(CommandSourceStack source) {
@@ -117,5 +117,9 @@ public class UnbarkCommand {
         }
         lastCommandTime.put(uuid, now);
         return false;
+    }
+
+    public static long getCooldownRemainingMs(UUID id) {
+        return Math.max(0, COOLDOWN_MS - (System.currentTimeMillis() - lastCommandTime.getOrDefault(id, 0L)));
     }
 }

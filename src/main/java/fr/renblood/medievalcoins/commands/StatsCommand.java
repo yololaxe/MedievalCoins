@@ -17,7 +17,6 @@ import java.util.Collection;
 @Mod.EventBusSubscriber
 public class StatsCommand {
 
-    @SubscribeEvent
     public static void onRegisterCommands(RegisterCommandsEvent evt) {
         CommandDispatcher<CommandSourceStack> d = evt.getDispatcher();
 

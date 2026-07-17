@@ -1,11 +1,11 @@
 package fr.renblood.medievalcoins.tree.network;
 
-import fr.renblood.medievalcoins.MedievalCoin;
-import fr.renblood.medievalcoins.tree.capability.SpecialSlotCapabilityHandler;
-import net.minecraft.client.Minecraft;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.world.item.ItemStack;
+import net.minecraftforge.api.distmarker.Dist;
+import net.minecraftforge.fml.DistExecutor;
 import net.minecraftforge.network.NetworkEvent;
+import fr.renblood.medievalcoins.network.ClientPacketHandler;
 
 import java.util.function.Supplier;
 
@@ -14,6 +14,10 @@ public class FertilizerSlotMessage {
 
     public FertilizerSlotMessage(ItemStack stack) {
         this.stack = stack;
+    }
+
+    public ItemStack getStack() {
+        return stack;
     }
 
     public static void encode(FertilizerSlotMessage msg, FriendlyByteBuf buf) {
@@ -26,20 +30,7 @@ public class FertilizerSlotMessage {
 
     public static void handle(FertilizerSlotMessage msg, Supplier<NetworkEvent.Context> ctx) {
         ctx.get().enqueueWork(() -> {
-            Minecraft mc = Minecraft.getInstance();
-            if (mc.player == null) return;
-
-            if (MedievalCoin.DEBUG_MODE) {
-                MedievalCoin.LOGGER.info("Client received FertilizerSlotMessage. Stack: " + msg.stack + " Count: " + msg.stack.getCount());
-            }
-
-            // Utilisation de la nouvelle capability SpecialSlotCapabilityHandler
-            mc.player.getCapability(SpecialSlotCapabilityHandler.SPECIAL_SLOT_CAP).ifPresent(inv -> {
-                inv.setStackInSlot(0, msg.stack);
-                if (MedievalCoin.DEBUG_MODE) {
-                    MedievalCoin.LOGGER.info("Client capability updated. New slot content: " + inv.getStackInSlot(0));
-                }
-            });
+            DistExecutor.unsafeRunWhenOn(Dist.CLIENT, () -> () -> ClientPacketHandler.handleFertilizerSlot(msg));
         });
         ctx.get().setPacketHandled(true);
     }

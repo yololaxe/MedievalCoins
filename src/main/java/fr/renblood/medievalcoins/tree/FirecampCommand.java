@@ -49,7 +49,7 @@ public class FirecampCommand {
         CommandDispatcher<CommandSourceStack> d = evt.getDispatcher();
 
         // Commande principale /firecamp
-        d.register(Commands.literal("firecamp")
+        d.register(Commands.literal("mc").then(Commands.literal("ability").then(Commands.literal("firecamp")
                 .requires(src -> src.hasPermission(0))
                 .executes(c -> {
                     CommandSourceStack src = c.getSource();
@@ -126,12 +126,13 @@ public class FirecampCommand {
                         src.sendFailure(Component.literal("❌ Pas assez d'espace libre ici (besoin de 3 blocs d'air)."));
                         return 0;
                     }
-                }));
+                }))));
 
         // Commande admin pour configurer : /firecamp_config set_duration <minutes> | set_cooldown <minutes>
-        d.register(Commands.literal("firecamp_config")
+        d.register(Commands.literal("mc").then(Commands.literal("admin").then(Commands.literal("config")
+                .then(Commands.literal("ability").then(Commands.literal("firecamp")
                 .requires(src -> src.hasPermission(2)) // Admin
-                .then(Commands.literal("set_duration")
+                .then(Commands.literal("set-duration")
                         .then(Commands.argument("minutes", IntegerArgumentType.integer(1))
                                 .executes(c -> {
                                     int minutes = IntegerArgumentType.getInteger(c, "minutes");
@@ -141,7 +142,7 @@ public class FirecampCommand {
                                 })
                         )
                 )
-                .then(Commands.literal("set_cooldown")
+                .then(Commands.literal("set-cooldown")
                         .then(Commands.argument("minutes", IntegerArgumentType.integer(1))
                                 .executes(c -> {
                                     int minutes = IntegerArgumentType.getInteger(c, "minutes");
@@ -151,7 +152,7 @@ public class FirecampCommand {
                                 })
                         )
                 )
-        );
+        )))));
     }
 
     private static boolean isAir(ServerLevel level, BlockPos pos) {
@@ -237,5 +238,13 @@ public class FirecampCommand {
                 level.setBlock(pos, Blocks.AIR.defaultBlockState(), 3);
             }
         }
+    }
+
+    public static boolean isActive(UUID id) {
+        return activeCamps.containsKey(id);
+    }
+
+    public static long getCooldownRemainingMs(UUID id) {
+        return Math.max(0, cooldownMs - (System.currentTimeMillis() - lastCommandTime.getOrDefault(id, 0L)));
     }
 }

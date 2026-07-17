@@ -4,6 +4,7 @@ import com.mojang.blaze3d.systems.RenderSystem;
 import fr.renblood.medievalcoins.MedievalCoin;
 import fr.renblood.medievalcoins.item.Coins;
 import fr.renblood.medievalcoins.network.SubmitDepositMessage;
+import fr.renblood.medievalcoins.network.DepositAllCoinsMessage;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
@@ -74,6 +75,11 @@ public class DepositGuiScreen extends AbstractContainerScreen<DepositGuiMenu> {
 
     @Override public void init() {
         super.init();
+        this.addRenderableWidget(Button.builder(
+                        Component.translatable("gui.medieval_coins.banker_gui.deposit_all"),
+                        btn -> MedievalCoin.PACKET_HANDLER.sendToServer(new DepositAllCoinsMessage()))
+                .bounds(leftPos + 38, topPos + 89, 72, 18)
+                .build());
         // Bouton “Valider”
         this.addRenderableWidget(Button.builder(
                         Component.translatable("gui.medieval_coins.banker_gui.deposit_submit"),
@@ -101,7 +107,7 @@ public class DepositGuiScreen extends AbstractContainerScreen<DepositGuiMenu> {
                                     inv.getItem(3)
                             ));
                         })
-                .bounds(leftPos + 190, topPos + 81, 60, 20)
+                .bounds(leftPos + 116, topPos + 89, 72, 18)
                 .build());
     }
 }

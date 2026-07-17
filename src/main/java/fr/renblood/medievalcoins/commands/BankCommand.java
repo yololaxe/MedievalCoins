@@ -25,7 +25,8 @@ public class BankCommand {
 
 	@SubscribeEvent
 	public static void registerCommand(RegisterCommandsEvent event) {
-		event.getDispatcher().register(Commands.literal("bank").requires(s -> s.hasPermission(4)).executes(arguments -> {
+		event.getDispatcher().register(Commands.literal("mc").then(Commands.literal("admin").then(
+				Commands.literal("bank").requires(s -> s.hasPermission(4)).executes(arguments -> {
 			if (isOnCooldown(arguments.getSource())) return 0;
 			Level world = arguments.getSource().getUnsidedLevel();
 			double x = arguments.getSource().getPosition().x();
@@ -40,7 +41,7 @@ public class BankCommand {
 
 			CommandProcedureProcedure.execute(world, x, y, z, entity);
 			return 0;
-		}));
+		}))));
 	}
 
 	private static boolean isOnCooldown(CommandSourceStack source) {

@@ -99,6 +99,8 @@ public class BankerGuiScreen extends AbstractContainerScreen<BankerGuiMenu> {
 
 	@Override
 	protected void renderLabels(GuiGraphics gg, int mx, int my) {
+		gg.drawString(this.font, Component.translatable("gui.medieval_coins.banker_gui.balance"), 122, 20, 0xFF5A3A18, false);
+		gg.drawString(this.font, moneyDisplay, 122, 31, 0xFF000000, false);
 		// Affiche chaque valeur à côté de son icône
 		gg.drawString(this.font, goldValue,   122, 49, 0xFF000000, false); // 🟡
 		gg.drawString(this.font, silverValue, 163, 49, 0xFF000000, false); // ⚪

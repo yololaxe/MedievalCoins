@@ -7,6 +7,7 @@ import fr.renblood.medievalcoins.api.model.PlayerModel;
 import fr.renblood.medievalcoins.inventory.banker.WithdrawGuiMenu;
 import fr.renblood.medievalcoins.item.Coins;
 import fr.renblood.medievalcoins.network.PlayerCache;
+import fr.renblood.medievalcoins.tutorial.TutorialManager;
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.network.chat.Component;
@@ -56,6 +57,10 @@ public class SubmitWithdrawMessage {
             ServerPlayer player = ctx.getSender();
             if (player == null) return;
             if (!(player.containerMenu instanceof WithdrawGuiMenu)) return;
+            if (msg.coinType < 0 || msg.coinType > 3 || msg.amount < 1 || msg.amount > 64) {
+                player.sendSystemMessage(Component.translatable("chat.medieval_coins.withdraw_invalid"));
+                return;
+            }
 
             // Vérification du cooldown
             UUID uuid = player.getGameProfile().getId();
@@ -92,18 +97,6 @@ public class SubmitWithdrawMessage {
 
             // --- 3) Appel API et mise à jour du solde ---
             String uuidString = uuid.toString();
-            PlayerModel pm = PlayerCache.getPlayer(uuidString);
-            if (pm == null) {
-                try {
-                    pm = ApiClient.getPlayer(uuidString);
-                    PlayerCache.updatePlayer(pm);
-                } catch (Exception e) {
-                    MedievalCoin.LOGGER.error("API getPlayer failed", e);
-                    player.sendSystemMessage(Component.translatable("chat.medieval_coins.withdraw_error"));
-                    return;
-                }
-            }
-            
             // Calcul du coût total en unité de base (Fer)
             // 0=Fer(1), 1=Bronze(64), 2=Argent(4096), 3=Or(262144)
             long unitCost = switch (msg.coinType) {
@@ -116,41 +109,36 @@ public class SubmitWithdrawMessage {
             long totalCostLong = unitCost * msg.amount;
             int totalCost = (int) totalCostLong; // Attention overflow si montant énorme
 
-            int newBalance;
+            ApiExecutor.execute(() -> {
             try {
-                // On appelle withdraw avec coinType=0 (Fer) et le coût total calculé
-                // Cela permet de gérer la conversion côté mod sans dépendre du backend
-                newBalance = ApiClient.withdraw(pm.id_minecraft, 0, totalCost);
+                PlayerModel model = PlayerCache.getPlayer(uuidString);
+                if (model == null) model = ApiClient.getPlayer(uuidString);
+                if (model.money < totalCost) {
+                    player.getServer().execute(() ->
+                            player.sendSystemMessage(Component.translatable("chat.medieval_coins.withdraw_insufficient")));
+                    return;
+                }
+                int newBalance = ApiClient.withdraw(model.id_minecraft, 0, totalCost);
+                PlayerModel updatedModel = model;
+                player.getServer().execute(() -> {
+                    updatedModel.money = newBalance;
+                    PlayerCache.updatePlayer(updatedModel);
+                    if (!player.getInventory().add(toGive)) player.drop(toGive, false);
+                    MedievalCoin.PACKET_HANDLER.send(PacketDistributor.PLAYER.with(() -> player),
+                            new MoneyUpdateMessage(uuidString, newBalance));
+                    MedievalCoin.PACKET_HANDLER.send(PacketDistributor.PLAYER.with(() -> player),
+                            new PlayerStatsUpdateMessage(updatedModel));
+                    player.sendSystemMessage(Component.translatable("chat.medieval_coins.withdraw_success", msg.amount));
+                    TutorialManager.recordBankWithdraw(player);
+                });
+                MedievalCoin.LOGGER.info("Withdraw {}x type{} (cost {}) for {} -> new balance {}",
+                        msg.amount, msg.coinType, totalCost, uuidString, newBalance);
             } catch (Exception e) {
                 MedievalCoin.LOGGER.error("API withdraw failed", e);
-                player.sendSystemMessage(Component.translatable("chat.medieval_coins.withdraw_error"));
-                return;
+                player.getServer().execute(() ->
+                        player.sendSystemMessage(Component.translatable("chat.medieval_coins.withdraw_error")));
             }
-            pm.money = newBalance;
-            PlayerCache.updatePlayer(pm);
-
-            // --- 4) Donne réellement la pile ---
-            inv.add(toGive);
-
-            // --- 5) Notifie le client du nouveau solde ---
-            MedievalCoin.PACKET_HANDLER.send(
-                    PacketDistributor.PLAYER.with(() -> player),
-                    new MoneyUpdateMessage(uuidString, newBalance)
-            );
-            
-            // 5b) Envoyer le PlayerModel complet pour mettre à jour le cache client global
-            MedievalCoin.PACKET_HANDLER.send(
-                    PacketDistributor.PLAYER.with(() -> player),
-                    new PlayerStatsUpdateMessage(pm)
-            );
-
-            // --- 6) Message de succès ---
-            player.sendSystemMessage(
-                    Component.translatable("chat.medieval_coins.withdraw_success", msg.amount)
-            );
-            MedievalCoin.LOGGER.info("Withdraw {}×type{} (cost {}) for {} → new balance {}",
-                    msg.amount, msg.coinType, totalCost, uuidString, newBalance
-            );
+            });
         });
         ctx.setPacketHandled(true);
     }

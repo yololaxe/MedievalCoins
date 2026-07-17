@@ -1,9 +1,8 @@
 package fr.renblood.medievalcoins.network;
 
-import fr.renblood.medievalcoins.inventory.banker.BankerGuiScreen;
-import fr.renblood.medievalcoins.inventory.banker.WithdrawGuiScreen;
-import net.minecraft.client.Minecraft;
 import net.minecraft.network.FriendlyByteBuf;
+import net.minecraftforge.api.distmarker.Dist;
+import net.minecraftforge.fml.DistExecutor;
 import net.minecraftforge.network.NetworkEvent;
 
 import java.util.function.Supplier;
@@ -30,13 +29,7 @@ public class MoneyUpdateMessage {
 
     public static void handle(MoneyUpdateMessage msg, Supplier<NetworkEvent.Context> ctx) {
         ctx.get().enqueueWork(() -> {
-            Minecraft mc = Minecraft.getInstance();
-            var screen = mc.screen;
-            if (screen instanceof BankerGuiScreen banker) {
-                banker.updateMoney(msg.newMoney);
-            } else if (screen instanceof WithdrawGuiScreen withdraw) {
-                withdraw.updateMoney(msg.newMoney);
-            }
+            DistExecutor.unsafeRunWhenOn(Dist.CLIENT, () -> () -> ClientPacketHandler.handleMoneyUpdate(msg));
         });
         ctx.get().setPacketHandled(true);
     }

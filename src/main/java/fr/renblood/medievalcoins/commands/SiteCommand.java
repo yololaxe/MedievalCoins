@@ -19,7 +19,8 @@ public class SiteCommand {
     public static void onRegisterCommands(RegisterCommandsEvent evt) {
         CommandDispatcher<CommandSourceStack> d = evt.getDispatcher();
 
-        d.register(Commands.literal("site")
+        d.register(Commands.literal("mc")
+                .then(Commands.literal("site")
                 .executes(c -> {
                     c.getSource().sendSuccess(() -> Component.literal("§aCliquez ici pour visiter notre site web : ")
                             .append(Component.literal("§b§n" + SITE_URL)
@@ -27,6 +28,6 @@ public class SiteCommand {
                                             .withClickEvent(new ClickEvent(ClickEvent.Action.OPEN_URL, SITE_URL))
                                             .withUnderlined(true))), false);
                     return 1;
-                }));
+                })));
     }
 }

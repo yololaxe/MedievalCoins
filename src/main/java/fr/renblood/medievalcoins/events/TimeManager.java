@@ -13,6 +13,9 @@ import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
 
 import java.util.List;
+import java.util.Map;
+import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 
 @Mod.EventBusSubscriber(modid = MedievalCoin.MODID)
 public class TimeManager {
@@ -22,9 +25,11 @@ public class TimeManager {
     
     // Pourcentage de joueurs devant dormir pour passer la nuit (0.0 à 1.0)
     public static double sleepPercentage = 0.8;
+    public static int sleepDurationSeconds = 5;
 
     private static double timeAccumulator = 0;
     private static long lastGameTime = -1;
+    private static final Map<UUID, Integer> SLEEP_TICKS = new ConcurrentHashMap<>();
 
     @SubscribeEvent
     public static void onServerTick(TickEvent.ServerTickEvent event) {
@@ -32,6 +37,7 @@ public class TimeManager {
 
         MinecraftServer server = event.getServer();
         ServerLevel level = server.overworld();
+        updateSleepTimers(level);
 
         // 1. Désactiver le cycle vanilla
         if (level.getGameRules().getBoolean(GameRules.RULE_DAYLIGHT)) {
@@ -85,7 +91,7 @@ public class TimeManager {
         for (ServerPlayer player : players) {
             if (player.isSpectator()) continue;
             totalPlayers++;
-            if (player.isSleeping()) {
+            if (player.isSleeping() && SLEEP_TICKS.getOrDefault(player.getUUID(), 0) >= sleepDurationSeconds * 20) {
                 sleepingCount++;
             }
         }
@@ -94,6 +100,17 @@ public class TimeManager {
 
         // Vérifie si le pourcentage est atteint
         return (double) sleepingCount / totalPlayers >= sleepPercentage;
+    }
+
+    private static void updateSleepTimers(ServerLevel level) {
+        for (ServerPlayer player : level.players()) {
+            if (player.isSleeping()) {
+                SLEEP_TICKS.merge(player.getUUID(), 1, Integer::sum);
+            } else {
+                SLEEP_TICKS.remove(player.getUUID());
+            }
+        }
+        SLEEP_TICKS.keySet().removeIf(uuid -> level.getServer().getPlayerList().getPlayer(uuid) == null);
     }
 
     private static void handleWakeUp(ServerLevel level) {
@@ -118,6 +135,7 @@ public class TimeManager {
                 player.sendSystemMessage(Component.literal("§cVous n'avez pas dormi... La fatigue vous pèse."));
             }
         }
+        SLEEP_TICKS.clear();
     }
 
     private static void resetWeather(ServerLevel level) {

@@ -24,7 +24,7 @@ public class NoFallCommand {
     public static void onRegisterCommands(RegisterCommandsEvent evt) {
         CommandDispatcher<CommandSourceStack> d = evt.getDispatcher();
 
-        d.register(Commands.literal("nofall")
+        d.register(Commands.literal("mc").then(Commands.literal("ability").then(Commands.literal("nofall")
                 .requires(src -> src.hasPermission(0))
                 .executes(c -> {
                     if (isOnCooldown(c.getSource())) return 0;
@@ -50,7 +50,7 @@ public class NoFallCommand {
                         src.sendSuccess(() -> Component.literal("✅ Mode NoFall activé."), true);
                     }
                     return 1;
-                }));
+                }))));
     }
 
     @SubscribeEvent
@@ -83,5 +83,13 @@ public class NoFallCommand {
     // Méthode utilitaire pour le nettoyage à la déconnexion
     public static void removePlayer(UUID id) {
         activePlayers.remove(id);
+    }
+
+    public static boolean isActive(UUID id) {
+        return activePlayers.contains(id);
+    }
+
+    public static long getCooldownRemainingMs(UUID id) {
+        return Math.max(0, COOLDOWN_MS - (System.currentTimeMillis() - lastCommandTime.getOrDefault(id, 0L)));
     }
 }

@@ -26,12 +26,9 @@ public class NpcModel {
     @SerializedName("trade_category")
     public String tradeCategory;
     
-    @SerializedName("quest_giver")
-    public boolean questGiver;
-    @SerializedName("quest_validator")
-    public boolean questValidator;
-    @SerializedName("quest_ids")
-    public List<String> questIds;
+    @SerializedName(value = "quest_links", alternate = {"questLinks"})
+    public List<QuestLinkModel> questLinks;
+    public Map<String, Object> implementation;
     @SerializedName("dialogue_by_state")
     public Map<String, String> dialogueByState;
     

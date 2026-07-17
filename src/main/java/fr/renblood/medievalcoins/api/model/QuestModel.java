@@ -1,5 +1,7 @@
 package fr.renblood.medievalcoins.api.model;
 
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
 import com.google.gson.annotations.SerializedName;
 import java.util.List;
 import java.util.Map;
@@ -22,6 +24,19 @@ public class QuestModel {
     public List<String> prerequisitesAny;
     
     public String npc;
+
+    @SerializedName(value = "npcId", alternate = {"npc_id"})
+    public String npcId;
+
+    @SerializedName(value = "npcName", alternate = {"npc_name"})
+    public String npcName;
+
+    @SerializedName(value = "startNpcId", alternate = {"start_npc_id"})
+    public String startNpcId;
+
+    @SerializedName(value = "completionNpcId", alternate = {"completion_npc_id"})
+    public String completionNpcId;
+
     public String type;
     
     public Map<String, String> description;
@@ -40,9 +55,30 @@ public class QuestModel {
         public String type;
         public List<ItemRequirement> items;
         public String coord;
-        public String target;
+        public JsonElement target;
+        @SerializedName(value = "npcId", alternate = {"npc_id"})
+        public String npcId;
         public int count;
         public String description;
+
+        public String getTargetNpcId() {
+            if (target != null && target.isJsonObject()) {
+                JsonObject object = target.getAsJsonObject();
+                JsonElement value = object.get("npcId");
+                if (value == null) value = object.get("npc_id");
+                if (value != null && value.isJsonPrimitive()) return value.getAsString();
+            }
+            if (npcId != null && !npcId.isBlank()) return npcId;
+            return target != null && target.isJsonPrimitive() ? target.getAsString() : null;
+        }
+    }
+
+    public String getStartNpcId() {
+        return startNpcId != null && !startNpcId.isBlank() ? startNpcId : npcId;
+    }
+
+    public String getCompletionNpcId() {
+        return completionNpcId != null && !completionNpcId.isBlank() ? completionNpcId : npcId;
     }
     
     public static class ItemRequirement {

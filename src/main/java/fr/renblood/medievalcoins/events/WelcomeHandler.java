@@ -19,7 +19,7 @@ public class WelcomeHandler {
     public static void onPlayerLogin(PlayerEvent.PlayerLoggedInEvent event) {
         if (!(event.getEntity() instanceof ServerPlayer player)) return;
 
-        new Thread(() -> {
+        fr.renblood.medievalcoins.network.ApiExecutor.execute(() -> {
             try {
                 String uuid = player.getGameProfile().getId().toString();
                 // On essaie de récupérer les infos fraîches, sinon cache
@@ -45,6 +45,6 @@ public class WelcomeHandler {
             } catch (Exception e) {
                 e.printStackTrace();
             }
-        }).start();
+        });
     }
 }

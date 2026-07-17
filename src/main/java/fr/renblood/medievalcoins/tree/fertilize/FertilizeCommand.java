@@ -48,7 +48,7 @@ public class FertilizeCommand {
         CommandDispatcher<CommandSourceStack> d = evt.getDispatcher();
 
         // Commande principale /fertilize
-        d.register(Commands.literal("fertilize")
+        d.register(Commands.literal("mc").then(Commands.literal("ability").then(Commands.literal("fertilize")
                 .requires(src -> src.hasPermission(0))
                 .executes(c -> {
                     if (isOnCooldown(c.getSource())) return 0;
@@ -87,12 +87,13 @@ public class FertilizeCommand {
                     // Envoie l'état au client
                     MedievalCoin.PACKET_HANDLER.send(PacketDistributor.PLAYER.with(() -> player), new FertilizeStateMessage(isActive));
                     return 1;
-                }));
+                }))));
 
         // Commande admin pour configurer le délai : /fertilize_config set_time <seconds>
-        d.register(Commands.literal("fertilize_config")
+        d.register(Commands.literal("mc").then(Commands.literal("admin").then(Commands.literal("config")
+                .then(Commands.literal("ability").then(Commands.literal("fertilize")
                 .requires(src -> src.hasPermission(2)) // Permission admin (OP niveau 2+)
-                .then(Commands.literal("set_time")
+                .then(Commands.literal("set-time")
                         .then(Commands.argument("seconds", IntegerArgumentType.integer(1))
                                 .executes(c -> {
                                     if (isOnCooldown(c.getSource())) return 0;
@@ -103,7 +104,7 @@ public class FertilizeCommand {
                                 })
                         )
                 )
-        );
+        )))));
     }
 
     // Tick serveur : ajoute 1 bone meal toutes les X secondes
@@ -192,5 +193,13 @@ public class FertilizeCommand {
         }
         lastCommandTime.put(uuid, now);
         return false;
+    }
+
+    public static boolean isActive(UUID id) {
+        return fertilizingPlayers.contains(id);
+    }
+
+    public static long getCooldownRemainingMs(UUID id) {
+        return Math.max(0, COOLDOWN_MS - (System.currentTimeMillis() - lastCommandTime.getOrDefault(id, 0L)));
     }
 }

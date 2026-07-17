@@ -32,12 +32,9 @@ public class NpcModel {
     public String tradeCategory;
     
     // Champs spécifiques Quest
-    @SerializedName("quest_giver")
-    public boolean questGiver;
-    @SerializedName("quest_validator")
-    public boolean questValidator;
-    @SerializedName("quest_ids")
-    public List<String> questIds;
+    @SerializedName(value = "quest_links", alternate = {"questLinks"})
+    public List<fr.renblood.medievalcoins.api.model.QuestLinkModel> questLinks;
+    public Map<String, Object> implementation;
     @SerializedName("dialogue_by_state")
     public Map<String, String> dialogueByState;
     

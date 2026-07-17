@@ -30,13 +30,13 @@ public class MagnetCommand {
     public static void onRegisterCommands(RegisterCommandsEvent evt) {
         CommandDispatcher<CommandSourceStack> d = evt.getDispatcher();
 
-        d.register(Commands.literal("magnet")
+        d.register(Commands.literal("mc").then(Commands.literal("ability").then(Commands.literal("magnet")
                 .requires(src -> src.hasPermission(0))
                 .executes(c -> toggleMagnet(c.getSource(), -1)) // -1 signifie "utiliser la valeur par défaut/stockée"
                 .then(Commands.argument("range", DoubleArgumentType.doubleArg(2.0, 8.0))
                         .executes(c -> toggleMagnet(c.getSource(), DoubleArgumentType.getDouble(c, "range")))
                 )
-        );
+        )));
     }
 
     private static int toggleMagnet(CommandSourceStack src, double rangeArg) {
@@ -139,5 +139,13 @@ public class MagnetCommand {
     public static void removePlayer(UUID id) {
         activePlayers.remove(id);
         playerRanges.remove(id);
+    }
+
+    public static boolean isActive(UUID id) {
+        return activePlayers.contains(id);
+    }
+
+    public static long getCooldownRemainingMs(UUID id) {
+        return Math.max(0, COOLDOWN_MS - (System.currentTimeMillis() - lastCommandTime.getOrDefault(id, 0L)));
     }
 }

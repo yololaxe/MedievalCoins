@@ -22,26 +22,24 @@ public class BankerGuiRefreshMessage {
     }
 
     public static void handle(BankerGuiRefreshMessage msg, Supplier<NetworkEvent.Context> ctx) {
-        ctx.get().enqueueWork(() -> {
-            ServerPlayer sender = ctx.get().getSender();
-            if (sender == null) return;
-
-            // On prend l'UUID MC du joueur, pas son nom
-            String mcId = sender.getGameProfile().getId().toString();
+        ServerPlayer sender = ctx.get().getSender();
+        if (sender != null) {
+            String mcId = sender.getStringUUID();
+            ApiExecutor.execute(() -> {
             try {
-                // Appel avec l'id_minecraft (UUID) vers /players/get/<mcId>/
                 PlayerModel pm = ApiClient.getPlayer(mcId);
-                PlayerCache.updatePlayer(pm);
-
-                MoneyUpdateMessage resp = new MoneyUpdateMessage(pm.id_minecraft, pm.money);
-                MedievalCoin.PACKET_HANDLER.send(
-                        PacketDistributor.PLAYER.with(() -> sender),
-                        resp
-                );
+                sender.getServer().execute(() -> {
+                    PlayerCache.updatePlayer(pm);
+                    MedievalCoin.PACKET_HANDLER.send(
+                            PacketDistributor.PLAYER.with(() -> sender),
+                            new MoneyUpdateMessage(pm.id_minecraft, pm.money)
+                    );
+                });
             } catch (Exception e) {
                 MedievalCoin.LOGGER.warn("Refresh API failed for UUID=" + mcId, e);
             }
-        });
+            });
+        }
         ctx.get().setPacketHandled(true);
     }
 }

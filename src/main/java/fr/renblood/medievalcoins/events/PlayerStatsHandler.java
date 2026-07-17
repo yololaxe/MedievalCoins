@@ -117,7 +117,7 @@ public class PlayerStatsHandler {
     }
 
     public static void refreshPlayerStats(ServerPlayer player) {
-        new Thread(() -> {
+        fr.renblood.medievalcoins.network.ApiExecutor.execute(() -> {
             try {
                 String uuid = player.getGameProfile().getId().toString();
                 // On récupère les données fraîches depuis l'API
@@ -136,7 +136,7 @@ public class PlayerStatsHandler {
             } catch (Exception e) {
                 MedievalCoin.LOGGER.error("Failed to refresh stats for " + player.getName().getString(), e);
             }
-        }).start();
+        });
     }
 
     public static void reapplyCachedStats(ServerPlayer player) {

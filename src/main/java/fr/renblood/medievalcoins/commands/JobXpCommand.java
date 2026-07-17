@@ -32,7 +32,6 @@ public class JobXpCommand {
     private static final SuggestionProvider<CommandSourceStack> JOB_SUGGESTIONS = (ctx, builder) ->
             SharedSuggestionProvider.suggest(JOBS, builder);
 
-    @SubscribeEvent
     public static void onRegisterCommands(RegisterCommandsEvent evt) {
         CommandDispatcher<CommandSourceStack> d = evt.getDispatcher();
 
@@ -69,7 +68,7 @@ public class JobXpCommand {
             return 0;
         }
 
-        new Thread(() -> {
+        fr.renblood.medievalcoins.network.ApiExecutor.execute(() -> {
             try {
                 String uuid = target.getGameProfile().getId().toString();
                 JsonObject response = ApiClient.manageJobXp(uuid, action, job, amount);
@@ -96,7 +95,7 @@ public class JobXpCommand {
                         source.sendFailure(Component.literal("❌ Erreur API : " + e.getMessage()))
                 );
             }
-        }).start();
+        });
 
         return 1;
     }

@@ -6,8 +6,17 @@ import fr.renblood.medievalcoins.api.model.NpcModel;
 import fr.renblood.medievalcoins.api.model.NpcSpawnModel;
 import fr.renblood.medievalcoins.api.model.PlayerModel;
 import fr.renblood.medievalcoins.api.model.QuestModel;
+import fr.renblood.medievalcoins.api.model.NpcQuestInteractionModel;
+import fr.renblood.medievalcoins.api.model.QuestCompletionResult;
+import fr.renblood.medievalcoins.api.model.XpReferenceData;
+import fr.renblood.medievalcoins.api.service.XpReferenceService;
+import fr.renblood.medievalcoins.events.QuestObjectiveHandler;
+import fr.renblood.medievalcoins.market.counter.ReferenceItemData;
+import fr.renblood.medievalcoins.market.service.MarketPriceService;
 import fr.renblood.medievalcoins.network.ApiClient;
 import fr.renblood.medievalcoins.network.MoneyUpdateMessage;
+import fr.renblood.medievalcoins.network.OpenNpcDialogueMessage;
+import fr.renblood.medievalcoins.network.OpenNpcQuestInteractionsMessage;
 import fr.renblood.medievalcoins.network.PlayerCache;
 import fr.renblood.medievalcoins.network.PlayerStatsUpdateMessage;
 import fr.renblood.medievalcoins.network.RegionHighlightMessage;
@@ -79,13 +88,19 @@ public class MedievalCoinsAPI {
     }
 
     public static boolean createNpcSpawn(NpcSpawnModel spawn) {
+        return createNpcSpawn(null, spawn);
+    }
+
+    public static boolean createNpcSpawn(ServerPlayer player, NpcSpawnModel spawn) {
         if (spawn == null || !spawn.hasStableId()) {
             MedievalCoin.LOGGER.error("Failed to create NPC spawn: spawnId is required and must be stable");
             return false;
         }
         try {
             if (MedievalCoin.DEBUG_MODE) MedievalCoin.LOGGER.info("API: Creating NPC Spawn for NPC: " + spawn.npcId + " at " + spawn.x + "," + spawn.y + "," + spawn.z);
-            boolean result = ApiClient.createNpcSpawn(spawn);
+            boolean result = player == null
+                    ? ApiClient.createNpcSpawn(spawn)
+                    : ApiClient.createNpcSpawn(player, spawn);
             if (MedievalCoin.DEBUG_MODE) MedievalCoin.LOGGER.info("API: Create Spawn result: " + result);
             return result;
         } catch (Exception e) {
@@ -126,6 +141,30 @@ public class MedievalCoinsAPI {
         }
     }
 
+    public static List<NpcQuestInteractionModel> getNpcQuestInteractions(ServerPlayer player, String npcId) {
+        return QuestObjectiveHandler.getNpcInteractions(player, npcId);
+    }
+
+    public static QuestCompletionResult completeQuestFromNpc(ServerPlayer player, String questId) {
+        return QuestObjectiveHandler.completeFromNpc(player, questId);
+    }
+
+    public static void openNpcQuestInteractions(ServerPlayer player, String npcId, String npcName, String texture) {
+        QuestObjectiveHandler.openNpcInteractionsAsync(player, npcId, npcName, texture);
+    }
+
+    public static void showNpcDialogue(ServerPlayer player, String npcName, String text, String texture) {
+        if (player == null) return;
+        MedievalCoin.PACKET_HANDLER.send(
+                PacketDistributor.PLAYER.with(() -> player),
+                new OpenNpcDialogueMessage(
+                        npcName == null ? "" : npcName,
+                        text == null ? "" : text,
+                        texture == null ? "" : texture
+                )
+        );
+    }
+
     // --- GESTION XP MÉTIER ---
 
     public static long getJobXp(ServerPlayer player, String job) {
@@ -164,6 +203,43 @@ public class MedievalCoinsAPI {
         modifyJobXp(player, "remove", job, amount);
     }
 
+    // --- REFERENCES BACKEND ---
+
+    public static List<ReferenceItemData> getPriceReferences() {
+        try {
+            return MarketPriceService.getReferenceItems();
+        } catch (Exception e) {
+            MedievalCoin.LOGGER.error("Failed to read price references", e);
+            return Collections.emptyList();
+        }
+    }
+
+    public static List<XpReferenceData> getXpReferences() {
+        try {
+            return XpReferenceService.getReferences();
+        } catch (Exception e) {
+            MedievalCoin.LOGGER.error("Failed to read XP references", e);
+            return Collections.emptyList();
+        }
+    }
+
+    public static long getReferencePrice(String itemId) {
+        return getPriceReferences().stream()
+                .filter(reference -> matchesItem(reference.itemId(), itemId))
+                .map(ReferenceItemData::referencePrice)
+                .filter(java.util.Objects::nonNull)
+                .findFirst()
+                .orElse(0L);
+    }
+
+    public static int getReferenceXp(String action, String job, String itemId) {
+        return XpReferenceService.getReferenceXp(action, job, itemId);
+    }
+
+    public static int getReferenceXp(String job, String itemId) {
+        return getReferenceXp(null, job, itemId);
+    }
+
     // --- GESTION ÉCONOMIE ---
 
     public static double getBalance(ServerPlayer player) {
@@ -193,7 +269,7 @@ public class MedievalCoinsAPI {
     // --- MÉTHODES INTERNES ---
 
     private static void modifyJobXp(ServerPlayer player, String action, String job, int amount) {
-        new Thread(() -> {
+        fr.renblood.medievalcoins.network.ApiExecutor.execute(() -> {
             try {
                 String uuid = player.getGameProfile().getId().toString();
                 
@@ -242,11 +318,11 @@ public class MedievalCoinsAPI {
             } catch (Exception e) {
                 e.printStackTrace();
             }
-        }).start();
+        });
     }
 
     private static void modifyMoney(ServerPlayer player, int amount, boolean add) {
-        new Thread(() -> {
+        fr.renblood.medievalcoins.network.ApiExecutor.execute(() -> {
             try {
                 String uuid = player.getGameProfile().getId().toString();
                 PlayerModel pm = PlayerCache.getPlayer(uuid);
@@ -280,6 +356,13 @@ public class MedievalCoinsAPI {
             } catch (Exception e) {
                 MedievalCoin.LOGGER.error("Failed to modify money for " + player.getName().getString(), e);
             }
-        }).start();
+        });
+    }
+
+    private static boolean matchesItem(String value, String expected) {
+        if (expected == null || expected.isBlank()) return true;
+        if (value == null || value.isBlank()) return false;
+        return value.equalsIgnoreCase(expected)
+                || value.toLowerCase().endsWith(":" + expected.toLowerCase());
     }
 }

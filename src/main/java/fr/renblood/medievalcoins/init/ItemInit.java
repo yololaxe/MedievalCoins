@@ -28,6 +28,11 @@ public class ItemInit {
     public static final RegistryObject<Item> PRAYER_LECTERN =
             CreativeTab.addToTab(REGISTRY.register("prayer_lectern",
                     () -> new BlockItem(BlockInit.PRAYER_LECTERN.get(), new Item.Properties())));
+
+    public static final RegistryObject<Item> MERCHANT_COUNTER =
+            CreativeTab.addToTab(REGISTRY.register("merchant_counter",
+                    () -> new BlockItem(BlockInit.MERCHANT_COUNTER.get(), new Item.Properties())));
+
             
     // Item de verrouillage supprimé
 

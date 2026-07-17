@@ -25,7 +25,7 @@ public class VanishCommand {
     public static void onRegisterCommands(RegisterCommandsEvent evt) {
         CommandDispatcher<CommandSourceStack> d = evt.getDispatcher();
 
-        d.register(Commands.literal("vanish")
+        d.register(Commands.literal("mc").then(Commands.literal("ability").then(Commands.literal("vanish")
                 .requires(src -> src.hasPermission(0))
                 .executes(c -> {
                     if (isOnCooldown(c.getSource())) return 0;
@@ -52,7 +52,7 @@ public class VanishCommand {
                         src.sendSuccess(() -> Component.literal("✅ Mode Vanish activé."), true);
                     }
                     return 1;
-                }));
+                }))));
     }
 
     @SubscribeEvent
@@ -87,5 +87,13 @@ public class VanishCommand {
     // Méthode utilitaire pour le nettoyage à la déconnexion
     public static boolean removePlayer(UUID id) {
         return activePlayers.remove(id);
+    }
+
+    public static boolean isActive(UUID id) {
+        return activePlayers.contains(id);
+    }
+
+    public static long getCooldownRemainingMs(UUID id) {
+        return Math.max(0, COOLDOWN_MS - (System.currentTimeMillis() - lastCommandTime.getOrDefault(id, 0L)));
     }
 }
