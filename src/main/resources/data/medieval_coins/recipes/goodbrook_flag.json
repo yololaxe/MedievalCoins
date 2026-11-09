@@ -1,0 +1,24 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "equipment",
+  "pattern": [
+    " BN",
+    " S ",
+    " S "
+  ],
+  "key": {
+    "B": {
+      "item": "medieval_coins:goodbrook_banner"
+    },
+    "N": {
+      "item": "minecraft:iron_nugget"
+    },
+    "S": {
+      "item": "minecraft:stick"
+    }
+  },
+  "result": {
+    "item": "medieval_coins:goodbrook_flag",
+    "count": 1
+  }
+}

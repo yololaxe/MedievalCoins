@@ -1,0 +1,17 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "equipment",
+  "pattern": [
+    "B",
+    "B"
+  ],
+  "key": {
+    "B": {
+      "item": "medieval_coins:chalk_banner"
+    }
+  },
+  "result": {
+    "item": "medieval_coins:chalk_long_banner",
+    "count": 1
+  }
+}

@@ -5,6 +5,7 @@ import fr.renblood.medievalcoins.api.service.XpReferenceService;
 import fr.renblood.medievalcoins.init.BlockInit;
 import fr.renblood.medievalcoins.init.BlockEntityInit;
 import fr.renblood.medievalcoins.init.ItemInit;
+import fr.renblood.medievalcoins.init.SoundInit;
 import fr.renblood.medievalcoins.init.MedievalCoinsModMenus;
 import fr.renblood.medievalcoins.item.Coins;
 import fr.renblood.medievalcoins.land.LandConfig;
@@ -47,7 +48,7 @@ import static fr.renblood.medievalcoins.init.EntityInit.ENTITY_TYPES;
 public class MedievalCoin {
     public static final String MODID = "medieval_coins";
     public static final Logger LOGGER = LogManager.getLogger();
-    private static final String PROTOCOL_VERSION = "1";
+    private static final String PROTOCOL_VERSION = "5";
     
     // Variable globale de debug
     public static boolean DEBUG_MODE = true;
@@ -67,6 +68,7 @@ public class MedievalCoin {
         // 2) Enregistrement des DeferredRegister (items, entités, menus…)
         Coins.register(modBus);
         ItemInit.REGISTRY.register(modBus);
+        SoundInit.REGISTRY.register(modBus);
         BlockInit.REGISTRY.register(modBus);
         BlockEntityInit.REGISTRY.register(modBus);
         CreativeTab.TABS.register(modBus);
@@ -85,6 +87,8 @@ public class MedievalCoin {
     }
 
     private void registerNetworkMessages() {
+        PACKET_HANDLER.registerMessage(messageID++,EconomyFeedbackMessage.class,EconomyFeedbackMessage::encode,EconomyFeedbackMessage::decode,EconomyFeedbackMessage::handle,Optional.of(NetworkDirection.PLAY_TO_CLIENT));
+        PACKET_HANDLER.registerMessage(messageID++,EconomyStatusRequestMessage.class,EconomyStatusRequestMessage::encode,EconomyStatusRequestMessage::decode,EconomyStatusRequestMessage::handle,Optional.of(NetworkDirection.PLAY_TO_SERVER));
         // 1) Refresh GUI banquier
         PACKET_HANDLER.registerMessage(
                 messageID++,

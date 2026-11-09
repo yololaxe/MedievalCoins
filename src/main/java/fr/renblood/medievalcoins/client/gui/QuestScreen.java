@@ -10,7 +10,6 @@ import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.components.ObjectSelectionList;
 import net.minecraft.client.gui.components.Renderable;
-import net.minecraft.client.gui.screens.ChatScreen;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
@@ -54,6 +53,8 @@ public class QuestScreen extends Screen {
     private Button refreshButton;
     private boolean refreshing;
     private int autoRefreshTicks;
+    private int detailScroll;
+    private int detailContentHeight;
     private String statusMessage = "Cliquez sur le bouton de mise a jour pour recuperer les quetes.";
 
     private static final Map<String, List<PlayerQuestStateModel>> QUEST_CACHE = new ConcurrentHashMap<>();
@@ -130,6 +131,8 @@ public class QuestScreen extends Screen {
         this.currentCategory = category;
         this.selectedQuest = null;
         this.selectedState = null;
+        this.detailScroll = 0;
+        this.detailContentHeight = 0;
         updateFinishButtonState();
         if (this.list != null) this.list.clear();
 
@@ -309,7 +312,10 @@ public class QuestScreen extends Screen {
         updateFinishButtonState();
 
         if (selectedQuest != null) {
-            renderQuestDetails(gg, fontRenderer, detailX, detailY, detailWidth);
+            int detailHeight = this.height - detailY - 28;
+            gg.enableScissor(detailX - 2, detailY, detailX + detailWidth + 2, detailY + detailHeight);
+            renderQuestDetails(gg, fontRenderer, detailX, detailY - detailScroll, detailWidth);
+            gg.disableScissor();
         } else {
             String message = statusMessage == null || statusMessage.isEmpty()
                     ? "Selectionnez une quete"
@@ -354,6 +360,7 @@ public class QuestScreen extends Screen {
     }
 
     private void renderQuestDetails(GuiGraphics gg, Font fontRenderer, int detailX, int detailY, int detailWidth) {
+        int contentStart = detailY;
         String playerName = this.minecraft.player != null ? this.minecraft.player.getName().getString() : "Joueur";
         String npcName = selectedQuest.npcName != null ? selectedQuest.npcName
                 : selectedQuest.npc != null ? selectedQuest.npc : "PNJ";
@@ -407,6 +414,7 @@ public class QuestScreen extends Screen {
         if (!hasReward) {
             drawBulletLine(gg, fontRenderer, "Aucune recompense renseignee", detailX, detailY, detailWidth, TEXT_DIM);
         }
+        detailContentHeight = Math.max(0, detailY - contentStart);
     }
 
     private void renderMetaLine(GuiGraphics gg, Font fontRenderer, int x, int y, int width) {
@@ -509,7 +517,9 @@ public class QuestScreen extends Screen {
         if (this.minecraft == null || selectedQuest == null) return;
         String questId = selectedState != null ? selectedState.quest_id : selectedQuest.questId;
         if (questId == null || questId.isEmpty()) return;
-        this.minecraft.setScreen(new ChatScreen("/mc quest finish " + quoteCommandArg(questId) + " "));
+        if (this.minecraft.player != null) {
+            this.minecraft.player.connection.sendCommand("mc quest finish " + quoteCommandArg(questId));
+        }
     }
 
     private void updateFinishButtonPosition(int detailX, int detailWidth) {
@@ -523,6 +533,14 @@ public class QuestScreen extends Screen {
         boolean visible = selectedQuest != null && isManualApprovalQuest(selectedQuest);
         this.finishButton.visible = visible;
         this.finishButton.active = visible;
+    }
+
+    @Override
+    public boolean mouseScrolled(double mouseX, double mouseY, double delta) {
+        int viewportHeight = Math.max(1, this.height - 88);
+        int maxScroll = Math.max(0, detailContentHeight - viewportHeight);
+        detailScroll = Math.max(0, Math.min(maxScroll, detailScroll - (int) (delta * 18)));
+        return maxScroll > 0 || super.mouseScrolled(mouseX, mouseY, delta);
     }
 
     private void updateRefreshButtonState() {
@@ -607,6 +625,8 @@ public class QuestScreen extends Screen {
             QuestScreen.this.list.setSelected(this);
             QuestScreen.this.selectedQuest = state.questDetails;
             QuestScreen.this.selectedState = state;
+            QuestScreen.this.detailScroll = 0;
+            QuestScreen.this.detailContentHeight = 0;
             QuestScreen.this.statusMessage = "";
             QuestScreen.this.updateFinishButtonState();
             return true;

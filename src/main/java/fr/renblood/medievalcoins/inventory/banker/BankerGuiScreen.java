@@ -9,7 +9,8 @@ import fr.renblood.medievalcoins.procedures.OpenDepositGuiMessage;
 import fr.renblood.medievalcoins.procedures.OpenWithdrawGuiMessage;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.ImageButton;
-import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
+import fr.renblood.medievalcoins.client.economy.AdaptiveEconomyScreen;
+import fr.renblood.medievalcoins.client.economy.EconomyUi;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.player.Inventory;
@@ -19,15 +20,15 @@ import net.minecraft.world.level.Level;
 import java.util.HashMap;
 import java.util.List;
 
-public class BankerGuiScreen extends AbstractContainerScreen<BankerGuiMenu> {
+public class BankerGuiScreen extends AdaptiveEconomyScreen<BankerGuiMenu> {
 	private static final ResourceLocation TEXTURE =
 			new ResourceLocation("medieval_coins:textures/gui/banker_gui.png");
 
 	private final Level world;
 	private final int x, y, z;
 	private final Player entity;
-	private String moneyDisplay = "0F";
-	private String moneyTooltip = "0 pièce de fer";
+	private String moneyDisplay = "—";
+	private String moneyTooltip = "Solde à actualiser";
 	private String goldValue = "0";
 	private String silverValue = "0";
 	private String bronzeValue = "0";
@@ -88,9 +89,9 @@ public class BankerGuiScreen extends AbstractContainerScreen<BankerGuiMenu> {
 	}
 
 	@Override
-	public void render(GuiGraphics gg, int mx, int my, float pt) {
+	public void renderLogical(GuiGraphics gg, int mx, int my, float pt) {
 		this.renderBackground(gg);
-		super.render(gg, mx, my, pt);
+		super.renderLogical(gg, mx, my, pt);
 		this.renderTooltip(gg, mx, my);
 //		if (isHoveringMoney(mx, my)) {
 //			gg.renderComponentTooltip(this.font, List.of(Component.literal(moneyTooltip)), mx, my);
@@ -112,8 +113,8 @@ public class BankerGuiScreen extends AbstractContainerScreen<BankerGuiMenu> {
 	}
 
 
-	public void updateMoney(double newMoney) {
-		int amount = (int)newMoney;
+	public void updateMoney(long newMoney) {
+		long amount = newMoney;
 		var parts = convertMoney(amount);
 		this.moneyDisplay  = parts.display;
 		this.moneyTooltip  = parts.tooltip;
@@ -124,20 +125,20 @@ public class BankerGuiScreen extends AbstractContainerScreen<BankerGuiMenu> {
 	}
 
 
-	private record Parts(int gold, int silver, int bronze, int iron, String display, String tooltip) {}
+	private record Parts(long gold, long silver, long bronze, long iron, String display, String tooltip) {}
 
-	private Parts convertMoney(int amount) {
+	private Parts convertMoney(long amount) {
 		final int PER_IRON   = 1;
 		final int PER_BRONZE = 64 * PER_IRON;
 		final int PER_SILVER = 64 * PER_BRONZE;
 		final int PER_GOLD   = 64 * PER_SILVER;
 
-		int gold   = amount / PER_GOLD;
-		int remG   = amount % PER_GOLD;
-		int silver = remG / PER_SILVER;
-		int remS   = remG % PER_SILVER;
-		int bronze = remS / PER_BRONZE;
-		int iron   = remS % PER_BRONZE;
+		long gold   = amount / PER_GOLD;
+		long remG   = amount % PER_GOLD;
+		long silver = remG / PER_SILVER;
+		long remS   = remG % PER_SILVER;
+		long bronze = remS / PER_BRONZE;
+		long iron   = remS % PER_BRONZE;
 
 		var disp = new StringBuilder();
 		if (gold > 0)   disp.append(gold).append("O ");

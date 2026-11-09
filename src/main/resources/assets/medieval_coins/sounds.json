@@ -1,0 +1,10 @@
+{
+  "pippin": {
+    "sounds": [
+      {
+        "name": "medieval_coins:pippin",
+        "stream": true
+      }
+    ]
+  }
+}

@@ -1,0 +1,30 @@
+{
+  "loader": "forge:separate_transforms",
+  "textures": {
+    "particle": "medieval_coins:item/goodbrook_flag"
+  },
+  "base": {
+    "parent": "medieval_coins:block/goodbrook_flag"
+  },
+  "perspectives": {
+    "gui": {
+      "parent": "minecraft:item/generated",
+      "textures": {
+        "layer0": "medieval_coins:item/goodbrook_flag"
+      }
+    },
+    "ground": {
+      "parent": "minecraft:item/generated",
+      "textures": {
+        "layer0": "medieval_coins:item/goodbrook_flag"
+      }
+    },
+    "fixed": {
+      "parent": "minecraft:item/generated",
+      "textures": {
+        "layer0": "medieval_coins:item/goodbrook_flag"
+      }
+    }
+  },
+  "gui_light": "front"
+}

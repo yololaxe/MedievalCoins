@@ -55,7 +55,7 @@ public class ClientPacketHandler {
     }
 
     public static void handleOpenPrayerScreen(OpenPrayerScreenMessage msg) {
-        Minecraft.getInstance().setScreen(new PrayerMinigameScreen());
+        Minecraft.getInstance().setScreen(new PrayerMinigameScreen(msg.gameId(), msg.gameName()));
     }
 
     public static void handleAbilityStatus(AbilityStatusMessage msg) {

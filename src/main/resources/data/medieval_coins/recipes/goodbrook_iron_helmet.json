@@ -1,0 +1,15 @@
+{
+  "type": "minecraft:smithing_transform",
+  "template": {
+    "item": "medieval_coins:goodbrook_sigil"
+  },
+  "base": {
+    "item": "minecraft:iron_helmet"
+  },
+  "addition": {
+    "item": "minecraft:white_wool"
+  },
+  "result": {
+    "item": "medieval_coins:goodbrook_iron_helmet"
+  }
+}

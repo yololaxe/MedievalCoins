@@ -1,0 +1,30 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "equipment",
+  "pattern": [
+    " A ",
+    "DPG",
+    " B "
+  ],
+  "key": {
+    "A": {
+      "item": "minecraft:green_dye"
+    },
+    "D": {
+      "item": "minecraft:black_dye"
+    },
+    "P": {
+      "item": "minecraft:paper"
+    },
+    "G": {
+      "item": "minecraft:gold_nugget"
+    },
+    "B": {
+      "item": "minecraft:black_dye"
+    }
+  },
+  "result": {
+    "item": "medieval_coins:rok_sigil",
+    "count": 4
+  }
+}

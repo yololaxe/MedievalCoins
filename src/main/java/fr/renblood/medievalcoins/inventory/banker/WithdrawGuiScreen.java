@@ -9,7 +9,8 @@ import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.components.EditBox;
 import net.minecraft.client.gui.screens.ConfirmScreen;
-import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
+import fr.renblood.medievalcoins.client.economy.AdaptiveEconomyScreen;
+import fr.renblood.medievalcoins.client.economy.EconomyUi;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.player.Inventory;
@@ -17,13 +18,13 @@ import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 
-public class WithdrawGuiScreen extends AbstractContainerScreen<WithdrawGuiMenu> {
+public class WithdrawGuiScreen extends AdaptiveEconomyScreen<WithdrawGuiMenu> {
     private static final ResourceLocation TEXTURE =
             new ResourceLocation(MedievalCoin.MODID, "textures/gui/withdraw_gui.png");
     private static final int CONFIRMATION_THRESHOLD = 4096;
 
     private final ItemStack[] defaultStacks = new ItemStack[12];
-    private double balance = 0;
+    private long balance = 0;
     private EditBox customAmount;
     private int customCoinType = 0;
 
@@ -59,7 +60,12 @@ public class WithdrawGuiScreen extends AbstractContainerScreen<WithdrawGuiMenu> 
 
         addRenderableWidget(Button.builder(Component.translatable("gui.medieval_coins.withdraw_gui.submit"), button -> {
                     int amount = parseCustomAmount();
-                    if (amount > 0) requestWithdraw(customCoinType, amount);
+                    if (amount > 0) {
+                        requestWithdraw(customCoinType, amount);
+                    } else {
+                        customAmount.setFocused(true);
+                        minecraft.player.sendSystemMessage(Component.translatable("chat.medieval_coins.withdraw_invalid"));
+                    }
                 })
                 .bounds(leftPos + 156, topPos + 88, 55, 18)
                 .build());
@@ -84,9 +90,9 @@ public class WithdrawGuiScreen extends AbstractContainerScreen<WithdrawGuiMenu> 
     }
 
     @Override
-    public void render(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
+    public void renderLogical(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
         renderBackground(graphics);
-        super.render(graphics, mouseX, mouseY, partialTick);
+        super.renderLogical(graphics, mouseX, mouseY, partialTick);
         renderTooltip(graphics, mouseX, mouseY);
         String blockedReason = blockedReasonAt(mouseX, mouseY);
         if (blockedReason != null) {
@@ -95,7 +101,7 @@ public class WithdrawGuiScreen extends AbstractContainerScreen<WithdrawGuiMenu> 
     }
 
     @Override
-    public boolean mouseClicked(double mouseX, double mouseY, int button) {
+    public boolean logicalClick(double mouseX, double mouseY, int button) {
         int rx = (int) mouseX - leftPos;
         int ry = (int) mouseY - topPos;
         for (int i = 0; i < 12; i++) {
@@ -106,7 +112,7 @@ public class WithdrawGuiScreen extends AbstractContainerScreen<WithdrawGuiMenu> 
                 return true;
             }
         }
-        return super.mouseClicked(mouseX, mouseY, button);
+        return super.logicalClick(mouseX, mouseY, button);
     }
 
     @Override
@@ -124,7 +130,7 @@ public class WithdrawGuiScreen extends AbstractContainerScreen<WithdrawGuiMenu> 
                 formatMoney((long) balance)), 12, 8, 0x404040, false);
     }
 
-    public void updateMoney(double newBalance) {
+    public void updateMoney(long newBalance) {
         this.balance = newBalance;
     }
 

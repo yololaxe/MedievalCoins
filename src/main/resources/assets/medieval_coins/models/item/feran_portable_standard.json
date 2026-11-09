@@ -1,0 +1,482 @@
+{
+  "loader": "forge:separate_transforms",
+  "textures": {
+    "particle": "medieval_coins:item/feran_portable_standard"
+  },
+  "base": {
+    "render_type": "minecraft:cutout",
+    "textures": {
+      "pole": "minecraft:block/dark_oak_log",
+      "gold": "minecraft:block/gold_block",
+      "cloth": "minecraft:block/light_blue_wool",
+      "crest": "medieval_coins:block/houses/feran",
+      "particle": "minecraft:block/light_blue_wool"
+    },
+    "elements": [
+      {
+        "from": [
+          7,
+          3,
+          7
+        ],
+        "to": [
+          8,
+          32,
+          8
+        ],
+        "faces": {
+          "north": {
+            "texture": "#pole",
+            "uv": [
+              0,
+              0,
+              16,
+              16
+            ]
+          },
+          "south": {
+            "texture": "#pole",
+            "uv": [
+              0,
+              0,
+              16,
+              16
+            ]
+          },
+          "east": {
+            "texture": "#pole",
+            "uv": [
+              0,
+              0,
+              16,
+              16
+            ]
+          },
+          "west": {
+            "texture": "#pole",
+            "uv": [
+              0,
+              0,
+              16,
+              16
+            ]
+          },
+          "up": {
+            "texture": "#pole",
+            "uv": [
+              0,
+              0,
+              16,
+              16
+            ]
+          },
+          "down": {
+            "texture": "#pole",
+            "uv": [
+              0,
+              0,
+              16,
+              16
+            ]
+          }
+        }
+      },
+      {
+        "from": [
+          6.5,
+          30.5,
+          6.5
+        ],
+        "to": [
+          8.5,
+          32,
+          8.5
+        ],
+        "faces": {
+          "north": {
+            "texture": "#gold",
+            "uv": [
+              0,
+              0,
+              16,
+              16
+            ]
+          },
+          "south": {
+            "texture": "#gold",
+            "uv": [
+              0,
+              0,
+              16,
+              16
+            ]
+          },
+          "east": {
+            "texture": "#gold",
+            "uv": [
+              0,
+              0,
+              16,
+              16
+            ]
+          },
+          "west": {
+            "texture": "#gold",
+            "uv": [
+              0,
+              0,
+              16,
+              16
+            ]
+          },
+          "up": {
+            "texture": "#gold",
+            "uv": [
+              0,
+              0,
+              16,
+              16
+            ]
+          },
+          "down": {
+            "texture": "#gold",
+            "uv": [
+              0,
+              0,
+              16,
+              16
+            ]
+          }
+        }
+      },
+      {
+        "from": [
+          8,
+          17,
+          7
+        ],
+        "to": [
+          30,
+          30,
+          7.6
+        ],
+        "faces": {
+          "north": {
+            "texture": "#cloth",
+            "uv": [
+              0,
+              0,
+              16,
+              16
+            ]
+          },
+          "south": {
+            "texture": "#cloth",
+            "uv": [
+              0,
+              0,
+              16,
+              16
+            ]
+          },
+          "east": {
+            "texture": "#cloth",
+            "uv": [
+              0,
+              0,
+              16,
+              16
+            ]
+          },
+          "west": {
+            "texture": "#cloth",
+            "uv": [
+              0,
+              0,
+              16,
+              16
+            ]
+          },
+          "up": {
+            "texture": "#cloth",
+            "uv": [
+              0,
+              0,
+              16,
+              16
+            ]
+          },
+          "down": {
+            "texture": "#cloth",
+            "uv": [
+              0,
+              0,
+              16,
+              16
+            ]
+          }
+        }
+      },
+      {
+        "from": [
+          8,
+          29.5,
+          6.9
+        ],
+        "to": [
+          30,
+          30.3,
+          7.7
+        ],
+        "faces": {
+          "north": {
+            "texture": "#gold",
+            "uv": [
+              0,
+              0,
+              16,
+              16
+            ]
+          },
+          "south": {
+            "texture": "#gold",
+            "uv": [
+              0,
+              0,
+              16,
+              16
+            ]
+          },
+          "east": {
+            "texture": "#gold",
+            "uv": [
+              0,
+              0,
+              16,
+              16
+            ]
+          },
+          "west": {
+            "texture": "#gold",
+            "uv": [
+              0,
+              0,
+              16,
+              16
+            ]
+          },
+          "up": {
+            "texture": "#gold",
+            "uv": [
+              0,
+              0,
+              16,
+              16
+            ]
+          },
+          "down": {
+            "texture": "#gold",
+            "uv": [
+              0,
+              0,
+              16,
+              16
+            ]
+          }
+        }
+      },
+      {
+        "from": [
+          29.3,
+          17,
+          6.9
+        ],
+        "to": [
+          30,
+          30,
+          7.7
+        ],
+        "faces": {
+          "north": {
+            "texture": "#gold",
+            "uv": [
+              0,
+              0,
+              16,
+              16
+            ]
+          },
+          "south": {
+            "texture": "#gold",
+            "uv": [
+              0,
+              0,
+              16,
+              16
+            ]
+          },
+          "east": {
+            "texture": "#gold",
+            "uv": [
+              0,
+              0,
+              16,
+              16
+            ]
+          },
+          "west": {
+            "texture": "#gold",
+            "uv": [
+              0,
+              0,
+              16,
+              16
+            ]
+          },
+          "up": {
+            "texture": "#gold",
+            "uv": [
+              0,
+              0,
+              16,
+              16
+            ]
+          },
+          "down": {
+            "texture": "#gold",
+            "uv": [
+              0,
+              0,
+              16,
+              16
+            ]
+          }
+        }
+      },
+      {
+        "from": [
+          12.5,
+          17.3,
+          6.97
+        ],
+        "to": [
+          25.5,
+          29.7,
+          7.63
+        ],
+        "shade": false,
+        "faces": {
+          "north": {
+            "texture": "#crest",
+            "uv": [
+              0,
+              0,
+              16,
+              16
+            ]
+          },
+          "south": {
+            "texture": "#crest",
+            "uv": [
+              0,
+              0,
+              16,
+              16
+            ]
+          }
+        }
+      }
+    ],
+    "display": {
+      "thirdperson_lefthand": {
+        "rotation": [
+          0,
+          0,
+          0
+        ],
+        "translation": [
+          0,
+          0,
+          0
+        ],
+        "scale": [
+          1,
+          1,
+          1
+        ]
+      },
+      "thirdperson_righthand": {
+        "rotation": [
+          0,
+          0,
+          0
+        ],
+        "translation": [
+          0,
+          0,
+          0
+        ],
+        "scale": [
+          1,
+          1,
+          1
+        ]
+      },
+      "firstperson_lefthand": {
+        "rotation": [
+          0,
+          -25,
+          0
+        ],
+        "translation": [
+          -3,
+          -1,
+          0
+        ],
+        "scale": [
+          0.6,
+          0.6,
+          0.6
+        ]
+      },
+      "firstperson_righthand": {
+        "rotation": [
+          0,
+          25,
+          0
+        ],
+        "translation": [
+          -3,
+          -1,
+          0
+        ],
+        "scale": [
+          0.6,
+          0.6,
+          0.6
+        ]
+      }
+    }
+  },
+  "perspectives": {
+    "gui": {
+      "parent": "minecraft:item/generated",
+      "textures": {
+        "layer0": "medieval_coins:item/feran_portable_standard"
+      }
+    },
+    "ground": {
+      "parent": "minecraft:item/generated",
+      "textures": {
+        "layer0": "medieval_coins:item/feran_portable_standard"
+      }
+    },
+    "fixed": {
+      "parent": "minecraft:item/generated",
+      "textures": {
+        "layer0": "medieval_coins:item/feran_portable_standard"
+      }
+    }
+  },
+  "gui_light": "front"
+}

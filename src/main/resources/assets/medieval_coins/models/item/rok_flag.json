@@ -1,0 +1,30 @@
+{
+  "loader": "forge:separate_transforms",
+  "textures": {
+    "particle": "medieval_coins:item/rok_flag"
+  },
+  "base": {
+    "parent": "medieval_coins:block/rok_flag"
+  },
+  "perspectives": {
+    "gui": {
+      "parent": "minecraft:item/generated",
+      "textures": {
+        "layer0": "medieval_coins:item/rok_flag"
+      }
+    },
+    "ground": {
+      "parent": "minecraft:item/generated",
+      "textures": {
+        "layer0": "medieval_coins:item/rok_flag"
+      }
+    },
+    "fixed": {
+      "parent": "minecraft:item/generated",
+      "textures": {
+        "layer0": "medieval_coins:item/rok_flag"
+      }
+    }
+  },
+  "gui_light": "front"
+}

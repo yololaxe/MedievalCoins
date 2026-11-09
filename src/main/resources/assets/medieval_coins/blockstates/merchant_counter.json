@@ -1,0 +1,5 @@
+{
+  "variants": {
+    "": { "model": "medieval_coins:block/merchant_counter" }
+  }
+}

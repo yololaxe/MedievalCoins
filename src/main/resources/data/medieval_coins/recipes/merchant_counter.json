@@ -1,0 +1,26 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "pattern": [
+    "BLB",
+    "CEC",
+    "LLL"
+  ],
+  "key": {
+    "B": {
+      "item": "medieval_coins:bronze_coin"
+    },
+    "L": {
+      "tag": "minecraft:logs"
+    },
+    "C": {
+      "item": "minecraft:chest"
+    },
+    "E": {
+      "item": "minecraft:emerald"
+    }
+  },
+  "result": {
+    "item": "medieval_coins:merchant_counter",
+    "count": 1
+  }
+}

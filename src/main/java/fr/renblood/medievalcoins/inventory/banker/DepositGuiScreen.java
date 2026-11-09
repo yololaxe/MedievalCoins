@@ -7,7 +7,8 @@ import fr.renblood.medievalcoins.network.SubmitDepositMessage;
 import fr.renblood.medievalcoins.network.DepositAllCoinsMessage;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.Button;
-import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
+import fr.renblood.medievalcoins.client.economy.AdaptiveEconomyScreen;
+import fr.renblood.medievalcoins.client.economy.EconomyUi;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.player.Inventory;
@@ -15,7 +16,7 @@ import net.minecraft.world.item.ItemStack;
 
 import java.util.function.Function;
 
-public class DepositGuiScreen extends AbstractContainerScreen<DepositGuiMenu> {
+public class DepositGuiScreen extends AdaptiveEconomyScreen<DepositGuiMenu> {
     private static final ResourceLocation TEXTURE =
             new ResourceLocation(MedievalCoin.MODID, "textures/gui/deposit_gui.png");
     // Position et espacement repris du menu
@@ -60,9 +61,9 @@ public class DepositGuiScreen extends AbstractContainerScreen<DepositGuiMenu> {
         }
     }
 
-    @Override public void render(GuiGraphics gg, int mx, int my, float pt) {
+    @Override public void renderLogical(GuiGraphics gg, int mx, int my, float pt) {
         renderBackground(gg);
-        super.render(gg, mx, my, pt);
+        super.renderLogical(gg, mx, my, pt);
         renderTooltip(gg, mx, my);
     }
 

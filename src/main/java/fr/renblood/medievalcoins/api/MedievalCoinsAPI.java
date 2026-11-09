@@ -13,6 +13,9 @@ import fr.renblood.medievalcoins.api.service.XpReferenceService;
 import fr.renblood.medievalcoins.events.QuestObjectiveHandler;
 import fr.renblood.medievalcoins.market.counter.ReferenceItemData;
 import fr.renblood.medievalcoins.market.service.MarketPriceService;
+import fr.renblood.medievalcoins.market.service.MarketApiService;
+import fr.renblood.medievalcoins.market.service.MarketMoneyService;
+import fr.renblood.medievalcoins.market.service.MarketReferenceItemService;
 import fr.renblood.medievalcoins.network.ApiClient;
 import fr.renblood.medievalcoins.network.MoneyUpdateMessage;
 import fr.renblood.medievalcoins.network.OpenNpcDialogueMessage;
@@ -27,11 +30,123 @@ import net.minecraftforge.network.PacketDistributor;
 
 import java.util.Collections;
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
 
 /**
  * API publique pour permettre aux autres mods d'interagir avec MedievalCoins.
  */
 public class MedievalCoinsAPI {
+    public static void refreshCommerceStatus(ServerPlayer player,String business){fr.renblood.medievalcoins.bank.EconomyFeedback.refresh(player,business);}
+
+
+    /** Physical callback and persistence callback run on the Minecraft server thread. */
+    public static CompletableFuture<JsonObject> settleCommerce(ServerPlayer player,String operationKey,String business,
+            String ownerMinecraft,String label,String kind,String offer,long unitPrice,int quantity,boolean sale,
+            java.util.function.BooleanSupplier delivery,Runnable persistBusiness){
+        var key=java.util.UUID.nameUUIDFromBytes(operationKey.getBytes(java.nio.charset.StandardCharsets.UTF_8));
+        String uuid=player.getStringUUID(),version="commerce-v1:"+unitPrice;
+        return fr.renblood.medievalcoins.bank.CommerceService.settle(player,key,()->{
+            fr.renblood.medievalcoins.bank.CommerceProtocol.register(uuid,business,ownerMinecraft,label,kind);
+            fr.renblood.medievalcoins.bank.CommerceProtocol.offer(uuid,business,offer,version,unitPrice,unitPrice,null,null);
+            return fr.renblood.medievalcoins.bank.CommerceProtocol.request(business,offer,version,sale?"SELL":"SERVICE",unitPrice,quantity,"BANK");
+        },delivery,persistBusiness);
+    }
+
+    /** Settle a route contract in physical coins and deliver its optional item bonus. */
+    public static CompletableFuture<JsonObject> settleNpcCashContract(ServerPlayer player,
+            String operationKey, String offer, long amount, net.minecraft.world.item.ItemStack bonus,
+            java.util.function.BooleanSupplier valid, Runnable complete) {
+        String uuid = player.getStringUUID();
+        var key = java.util.UUID.nameUUIDFromBytes(operationKey.getBytes(java.nio.charset.StandardCharsets.UTF_8));
+        String version = "commerce-v1:" + amount;
+        return fr.renblood.medievalcoins.bank.CommerceService.settleContract(player, key, () -> {
+            fr.renblood.medievalcoins.bank.CommerceProtocol.register(uuid, "npc-contracts", null,
+                    "Contrats des marchands", "NPC");
+            fr.renblood.medievalcoins.bank.CommerceProtocol.offer(uuid, "npc-contracts", offer,
+                    version, amount, amount, null, null);
+            return fr.renblood.medievalcoins.bank.CommerceProtocol.request("npc-contracts", offer,
+                    version, "SELL", amount, 1, "CASH");
+        }, () -> {
+            if (!valid.getAsBoolean()) return false;
+            boolean delivered = fr.renblood.medievalcoins.bank.CommerceInventory.mutate(player, () -> {
+                if (!fr.renblood.medievalcoins.market.service.MarketMoneyService.giveMoney(player, amount)) return false;
+                int remaining = bonus.getCount();
+                if (remaining > 0) {
+                    int space = 0;
+                    for (var stack : player.getInventory().items) {
+                        if (stack.isEmpty()) space += bonus.getMaxStackSize();
+                        else if (net.minecraft.world.item.ItemStack.isSameItemSameTags(stack, bonus)) {
+                            space += stack.getMaxStackSize() - stack.getCount();
+                        }
+                    }
+                    if (space < remaining) return false;
+                }
+                while (remaining > 0) {
+                    var part = bonus.copy();
+                    int count = Math.min(remaining, part.getMaxStackSize());
+                    part.setCount(count);
+                    if (!player.getInventory().add(part)) return false;
+                    remaining -= count;
+                }
+                return true;
+            });
+            if (!delivered) {
+                player.sendSystemMessage(net.minecraft.network.chat.Component.literal(
+                        "Libérez de la place pour recevoir les pièces et la récompense du contrat."));
+                return false;
+            }
+            complete.run();
+            return true;
+        });
+    }
+
+    public static CompletableFuture<JsonObject> claimCommerce(ServerPlayer player,String operationKey,String business){
+        var key=java.util.UUID.nameUUIDFromBytes(operationKey.getBytes(java.nio.charset.StandardCharsets.UTF_8));
+        String uuid=player.getStringUUID();
+        return fr.renblood.medievalcoins.bank.CommerceService.settle(player,key,()->{
+            String base=fr.renblood.medievalcoins.config.ModConfig.load().apiUrl.replaceAll("/+$","")+"/api/economy/v1/accounts";
+            JsonObject accounts=com.google.gson.JsonParser.parseString(fr.renblood.medievalcoins.network.ApiHttpClient.minecraftJson("GET",base,null,uuid)).getAsJsonObject();
+            String amount=null;
+            for(var value:accounts.getAsJsonArray("accounts")){
+                JsonObject account=value.getAsJsonObject();
+                if(account.has("business_id")&&business.equals(account.get("business_id").getAsString()))amount=account.get("available").getAsString();
+            }
+            if(amount==null||amount.equals("0"))throw new IllegalStateException("La caisse ne contient aucune recette confirmée.");
+            JsonObject body=new JsonObject();body.addProperty("business_id",business);body.addProperty("action","CLAIM");body.addProperty("amount",amount);body.addProperty("payment","BANK");return body;
+        },()->true,()->{});
+    }
+
+    public static CompletableFuture<JsonObject> refundCommerce(ServerPlayer player,String operationKey,String business,String originalKey,
+            java.util.function.BooleanSupplier delivery,Runnable persistBusiness){
+        var key=java.util.UUID.nameUUIDFromBytes(operationKey.getBytes(java.nio.charset.StandardCharsets.UTF_8));
+        String original=java.util.UUID.nameUUIDFromBytes(originalKey.getBytes(java.nio.charset.StandardCharsets.UTF_8)).toString();
+        return fr.renblood.medievalcoins.bank.CommerceService.settle(player,key,()->{
+            JsonObject body=new JsonObject();body.addProperty("business_id",business);body.addProperty("action","REFUND");
+            body.addProperty("original_key",original);body.addProperty("payment","BANK");return body;
+        },delivery,persistBusiness);
+    }
+
+    private static JsonObject innCustomerRequest(String uuid,String key,String business,String owner,String label,long price)throws Exception {
+        var protocol=fr.renblood.medievalcoins.bank.CommerceProtocol.class;
+        fr.renblood.medievalcoins.bank.CommerceProtocol.register(uuid,"inn-customers",null,"Budget des voyageurs","NPC");
+        fr.renblood.medievalcoins.bank.CommerceProtocol.register(uuid,business,owner,label,"INN");
+        String offer="service:"+key,version="commerce-v1:"+price;
+        fr.renblood.medievalcoins.bank.CommerceProtocol.offer(uuid,"inn-customers",offer,version,price,price,null,null);
+        JsonObject request=fr.renblood.medievalcoins.bank.CommerceProtocol.request("inn-customers",offer,version,"SELL",price,1,"BANK");
+        request.addProperty("destination_business_id",business);return request;
+    }
+    public static CompletableFuture<JsonObject> settleInnCustomer(ServerPlayer player,String key,String business,String owner,String label,long price,
+            java.util.function.BooleanSupplier delivery,Runnable persist){
+        return fr.renblood.medievalcoins.bank.CommerceService.settleCustomer(player,java.util.UUID.nameUUIDFromBytes(key.getBytes(java.nio.charset.StandardCharsets.UTF_8)),
+            ()->innCustomerRequest(player.getStringUUID(),key,business,owner,label,price),delivery,persist);
+    }
+    public static CompletableFuture<JsonObject> settlePassiveInn(net.minecraft.server.MinecraftServer server,String owner,String key,String business,String label,long price){
+        return fr.renblood.medievalcoins.bank.CommerceService.financial(server,owner,java.util.UUID.nameUUIDFromBytes(key.getBytes(java.nio.charset.StandardCharsets.UTF_8)),
+            ()->innCustomerRequest(owner,key,business,owner,label,price));
+    }
+
+    private static volatile long npcRevision;
+    private static volatile boolean npcDifferentialSyncAvailable = true;
 
     // --- NPC & SPAWNS ---
 
@@ -45,6 +160,30 @@ public class MedievalCoinsAPI {
             MedievalCoin.LOGGER.error("Failed to fetch NPCs from API", e);
             return Collections.emptyList();
         }
+    }
+
+    public static boolean getNpcChangesSince(long revision) {
+        if (!npcDifferentialSyncAvailable) return false;
+        try {
+            JsonObject changes = ApiClient.getNpcChangesSince(revision);
+            npcRevision = changes != null && changes.has("revision")
+                    ? changes.get("revision").getAsLong()
+                    : revision;
+            return npcRevision > revision;
+        } catch (Exception e) {
+            npcDifferentialSyncAvailable = false;
+            MedievalCoin.LOGGER.warn("Synchronisation differentielle PNJ indisponible; passage en synchronisation complete: {}",
+                    e.getMessage());
+            return false;
+        }
+    }
+
+    public static boolean isNpcDifferentialSyncAvailable() {
+        return npcDifferentialSyncAvailable;
+    }
+
+    public static long getNpcRevision() {
+        return npcRevision;
     }
 
     public static List<NpcSpawnModel> getNpcSpawns(String worldName) {
@@ -232,12 +371,44 @@ public class MedievalCoinsAPI {
                 .orElse(0L);
     }
 
+    public static boolean startQuest(ServerPlayer player, String questId) {
+        if (player == null || questId == null || questId.isBlank()) return false;
+        try {
+            PlayerModel profile = ApiClient.getPlayer(player.getGameProfile().getId().toString());
+            if (profile == null || profile.id == null || profile.id.isBlank()) return false;
+            return ApiClient.startQuest(profile.id, questId);
+        } catch (Exception exception) {
+            MedievalCoin.LOGGER.error("Failed to start quest {} for {}", questId, player.getName().getString(), exception);
+            return false;
+        }
+    }
+
+    public static CompletableFuture<Boolean> upsertPriceReference(String itemId, String displayName, String category,
+                                                                   long referencePrice, long minPrice, long maxPrice) {
+        return MarketApiService.upsertReferenceItem(itemId, displayName, category, referencePrice, minPrice, maxPrice);
+    }
+
+    public static CompletableFuture<Boolean> reloadPriceReferences() {
+        return MarketReferenceItemService.reloadAsync();
+    }
+
+    public static String formatMoney(long amount) {
+        return MarketMoneyService.formatMoney(amount);
+    }
+
     public static int getReferenceXp(String action, String job, String itemId) {
         return XpReferenceService.getReferenceXp(action, job, itemId);
     }
 
     public static int getReferenceXp(String job, String itemId) {
         return getReferenceXp(null, job, itemId);
+    }
+
+    public static CompletableFuture<Long> creditBank(ServerPlayer player, String operationKey, long amount, String reason) {
+        return fr.renblood.medievalcoins.bank.BankService.changeBalance(player, operationKey, amount, true, reason);
+    }
+    public static CompletableFuture<Long> debitBank(ServerPlayer player, String operationKey, long amount, String reason) {
+        return fr.renblood.medievalcoins.bank.BankService.changeBalance(player, operationKey, amount, false, reason);
     }
 
     // --- GESTION ÉCONOMIE ---
@@ -248,10 +419,12 @@ public class MedievalCoinsAPI {
         return pm != null ? pm.money : 0.0;
     }
 
+    @Deprecated
     public static void addMoney(ServerPlayer player, int amount) {
         modifyMoney(player, amount, true);
     }
 
+    @Deprecated
     public static void removeMoney(ServerPlayer player, int amount) {
         modifyMoney(player, amount, false);
     }

@@ -1,0 +1,15 @@
+{
+  "type": "minecraft:smithing_transform",
+  "template": {
+    "item": "medieval_coins:rollingford_sigil"
+  },
+  "base": {
+    "item": "minecraft:iron_helmet"
+  },
+  "addition": {
+    "item": "minecraft:brown_wool"
+  },
+  "result": {
+    "item": "medieval_coins:rollingford_iron_helmet"
+  }
+}

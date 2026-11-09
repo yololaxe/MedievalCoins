@@ -1,0 +1,24 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "equipment",
+  "pattern": [
+    " S ",
+    "WHW",
+    " W "
+  ],
+  "key": {
+    "S": {
+      "item": "minecraft:stick"
+    },
+    "W": {
+      "item": "minecraft:green_wool"
+    },
+    "H": {
+      "item": "medieval_coins:rok_sigil"
+    }
+  },
+  "result": {
+    "item": "medieval_coins:rok_banner",
+    "count": 1
+  }
+}

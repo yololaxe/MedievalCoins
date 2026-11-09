@@ -35,6 +35,14 @@ public class DepositGuiMenu extends AbstractContainerMenu {
         this.addSlot(new RestrictedSlotContainer(depositInv, 2, slotStartX + 2 * slotSpacing, slotY, Set.of(Coins.SILVER_COIN.get())));
         this.addSlot(new RestrictedSlotContainer(depositInv, 3, slotStartX + 3 * slotSpacing, slotY, Set.of(Coins.GOLD_COIN.get())));
 
+        net.minecraft.nbt.ListTag saved = playerInv.player.getPersistentData().getList("renblood_bank_deposit", 10);
+        for (int i = 0; i < saved.size(); i++) {
+            net.minecraft.nbt.CompoundTag tag = saved.getCompound(i);
+            int slot = tag.getInt("BankSlot");
+            if (slot >= 0 && slot < 4) depositInv.setItem(slot, ItemStack.of(tag));
+        }
+        depositInv.addListener(ignored -> persistEscrow(playerInv.player));
+
         // --- 2) Inventaire principal (3×9) ---
         int invStartX = 25 + 8;
         int invStartY = 25 + 84;
@@ -125,30 +133,31 @@ public class DepositGuiMenu extends AbstractContainerMenu {
     public SimpleContainer getDepositInv() {
         return depositInv;
     }
-    @Override
-    public void removed(Player player) {
-        super.removed(player);
-
-        // calcul du point devant le joueur
-        Direction look = player.getDirection(); // orientation nord/sud/est/ouest
-        double offsetX = look.getStepX() * 0.5;
-        double offsetZ = look.getStepZ() * 0.5;
-        double spawnX = player.getX() + offsetX;
-        double spawnY = player.getY() + 1.0; // légèrement au-dessus du sol
-        double spawnZ = player.getZ() + offsetZ;
-
-        // 1) Pour DepositGuiMenu
-        for (int i = 0; i < this.depositInv.getContainerSize(); i++) {
-            ItemStack stack = this.depositInv.removeItemNoUpdate(i);
+    private void persistEscrow(Player player) {
+        net.minecraft.nbt.ListTag saved = new net.minecraft.nbt.ListTag();
+        for (int i = 0; i < 4; i++) {
+            ItemStack stack = depositInv.getItem(i);
             if (!stack.isEmpty()) {
-                if (!player.getInventory().add(stack)) {
-                    // spawn devant le joueur
-                    ItemEntity dropped = new ItemEntity(player.level(), spawnX, spawnY, spawnZ, stack);
-                    player.level().addFreshEntity(dropped);
-                }
+                net.minecraft.nbt.CompoundTag tag = stack.save(new net.minecraft.nbt.CompoundTag());
+                tag.putInt("BankSlot", i); saved.add(tag);
             }
         }
+        player.getPersistentData().put("renblood_bank_deposit", saved);
     }
-
-
+    @Override public void removed(Player player) {
+        super.removed(player);
+        if (player.level().isClientSide) return;
+        for (int i = 0; i < 4; i++) {
+            ItemStack stack = depositInv.removeItemNoUpdate(i);
+            if (!stack.isEmpty()) {
+                player.getInventory().add(stack);
+                if (!stack.isEmpty()) depositInv.setItem(i, stack);
+            }
+        }
+        persistEscrow(player);
+        if (player instanceof net.minecraft.server.level.ServerPlayer serverPlayer) {
+            try { fr.renblood.medievalcoins.bank.BankPlayerSnapshot.save(serverPlayer); }
+            catch (Exception failure) { fr.renblood.medievalcoins.MedievalCoin.LOGGER.error("Deposit escrow save could not be verified", failure); }
+        }
+    }
 }

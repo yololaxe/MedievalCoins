@@ -24,7 +24,7 @@ public class PlayerModel {
     @SerializedName("pseudo_minecraft")
     public String pseudo_minecraft;
 
-    public int money;
+    public long money;
     public String rank;
 
     // Stats RPG

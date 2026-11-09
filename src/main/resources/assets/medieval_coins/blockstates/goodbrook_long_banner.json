@@ -1,0 +1,244 @@
+{
+  "variants": {
+    "facing=north,part=0": {
+      "model": "medieval_coins:block/goodbrook_long_banner_0",
+      "y": 0
+    },
+    "facing=east,part=0": {
+      "model": "medieval_coins:block/goodbrook_long_banner_0",
+      "y": 90
+    },
+    "facing=south,part=0": {
+      "model": "medieval_coins:block/goodbrook_long_banner_0",
+      "y": 180
+    },
+    "facing=west,part=0": {
+      "model": "medieval_coins:block/goodbrook_long_banner_0",
+      "y": 270
+    },
+    "facing=north,part=1": {
+      "model": "medieval_coins:block/goodbrook_long_banner_1",
+      "y": 0
+    },
+    "facing=east,part=1": {
+      "model": "medieval_coins:block/goodbrook_long_banner_1",
+      "y": 90
+    },
+    "facing=south,part=1": {
+      "model": "medieval_coins:block/goodbrook_long_banner_1",
+      "y": 180
+    },
+    "facing=west,part=1": {
+      "model": "medieval_coins:block/goodbrook_long_banner_1",
+      "y": 270
+    },
+    "facing=north,part=2": {
+      "model": "medieval_coins:block/goodbrook_long_banner_0",
+      "y": 0
+    },
+    "facing=east,part=2": {
+      "model": "medieval_coins:block/goodbrook_long_banner_0",
+      "y": 90
+    },
+    "facing=south,part=2": {
+      "model": "medieval_coins:block/goodbrook_long_banner_0",
+      "y": 180
+    },
+    "facing=west,part=2": {
+      "model": "medieval_coins:block/goodbrook_long_banner_0",
+      "y": 270
+    },
+    "facing=north,part=3": {
+      "model": "medieval_coins:block/goodbrook_long_banner_0",
+      "y": 0
+    },
+    "facing=east,part=3": {
+      "model": "medieval_coins:block/goodbrook_long_banner_0",
+      "y": 90
+    },
+    "facing=south,part=3": {
+      "model": "medieval_coins:block/goodbrook_long_banner_0",
+      "y": 180
+    },
+    "facing=west,part=3": {
+      "model": "medieval_coins:block/goodbrook_long_banner_0",
+      "y": 270
+    },
+    "facing=north,part=4": {
+      "model": "medieval_coins:block/goodbrook_long_banner_0",
+      "y": 0
+    },
+    "facing=east,part=4": {
+      "model": "medieval_coins:block/goodbrook_long_banner_0",
+      "y": 90
+    },
+    "facing=south,part=4": {
+      "model": "medieval_coins:block/goodbrook_long_banner_0",
+      "y": 180
+    },
+    "facing=west,part=4": {
+      "model": "medieval_coins:block/goodbrook_long_banner_0",
+      "y": 270
+    },
+    "facing=north,part=5": {
+      "model": "medieval_coins:block/goodbrook_long_banner_0",
+      "y": 0
+    },
+    "facing=east,part=5": {
+      "model": "medieval_coins:block/goodbrook_long_banner_0",
+      "y": 90
+    },
+    "facing=south,part=5": {
+      "model": "medieval_coins:block/goodbrook_long_banner_0",
+      "y": 180
+    },
+    "facing=west,part=5": {
+      "model": "medieval_coins:block/goodbrook_long_banner_0",
+      "y": 270
+    },
+    "facing=north,part=6": {
+      "model": "medieval_coins:block/goodbrook_long_banner_0",
+      "y": 0
+    },
+    "facing=east,part=6": {
+      "model": "medieval_coins:block/goodbrook_long_banner_0",
+      "y": 90
+    },
+    "facing=south,part=6": {
+      "model": "medieval_coins:block/goodbrook_long_banner_0",
+      "y": 180
+    },
+    "facing=west,part=6": {
+      "model": "medieval_coins:block/goodbrook_long_banner_0",
+      "y": 270
+    },
+    "facing=north,part=7": {
+      "model": "medieval_coins:block/goodbrook_long_banner_0",
+      "y": 0
+    },
+    "facing=east,part=7": {
+      "model": "medieval_coins:block/goodbrook_long_banner_0",
+      "y": 90
+    },
+    "facing=south,part=7": {
+      "model": "medieval_coins:block/goodbrook_long_banner_0",
+      "y": 180
+    },
+    "facing=west,part=7": {
+      "model": "medieval_coins:block/goodbrook_long_banner_0",
+      "y": 270
+    },
+    "facing=north,part=8": {
+      "model": "medieval_coins:block/goodbrook_long_banner_0",
+      "y": 0
+    },
+    "facing=east,part=8": {
+      "model": "medieval_coins:block/goodbrook_long_banner_0",
+      "y": 90
+    },
+    "facing=south,part=8": {
+      "model": "medieval_coins:block/goodbrook_long_banner_0",
+      "y": 180
+    },
+    "facing=west,part=8": {
+      "model": "medieval_coins:block/goodbrook_long_banner_0",
+      "y": 270
+    },
+    "facing=north,part=9": {
+      "model": "medieval_coins:block/goodbrook_long_banner_0",
+      "y": 0
+    },
+    "facing=east,part=9": {
+      "model": "medieval_coins:block/goodbrook_long_banner_0",
+      "y": 90
+    },
+    "facing=south,part=9": {
+      "model": "medieval_coins:block/goodbrook_long_banner_0",
+      "y": 180
+    },
+    "facing=west,part=9": {
+      "model": "medieval_coins:block/goodbrook_long_banner_0",
+      "y": 270
+    },
+    "facing=north,part=10": {
+      "model": "medieval_coins:block/goodbrook_long_banner_0",
+      "y": 0
+    },
+    "facing=east,part=10": {
+      "model": "medieval_coins:block/goodbrook_long_banner_0",
+      "y": 90
+    },
+    "facing=south,part=10": {
+      "model": "medieval_coins:block/goodbrook_long_banner_0",
+      "y": 180
+    },
+    "facing=west,part=10": {
+      "model": "medieval_coins:block/goodbrook_long_banner_0",
+      "y": 270
+    },
+    "facing=north,part=11": {
+      "model": "medieval_coins:block/goodbrook_long_banner_0",
+      "y": 0
+    },
+    "facing=east,part=11": {
+      "model": "medieval_coins:block/goodbrook_long_banner_0",
+      "y": 90
+    },
+    "facing=south,part=11": {
+      "model": "medieval_coins:block/goodbrook_long_banner_0",
+      "y": 180
+    },
+    "facing=west,part=11": {
+      "model": "medieval_coins:block/goodbrook_long_banner_0",
+      "y": 270
+    },
+    "facing=north,part=12": {
+      "model": "medieval_coins:block/goodbrook_long_banner_0",
+      "y": 0
+    },
+    "facing=east,part=12": {
+      "model": "medieval_coins:block/goodbrook_long_banner_0",
+      "y": 90
+    },
+    "facing=south,part=12": {
+      "model": "medieval_coins:block/goodbrook_long_banner_0",
+      "y": 180
+    },
+    "facing=west,part=12": {
+      "model": "medieval_coins:block/goodbrook_long_banner_0",
+      "y": 270
+    },
+    "facing=north,part=13": {
+      "model": "medieval_coins:block/goodbrook_long_banner_0",
+      "y": 0
+    },
+    "facing=east,part=13": {
+      "model": "medieval_coins:block/goodbrook_long_banner_0",
+      "y": 90
+    },
+    "facing=south,part=13": {
+      "model": "medieval_coins:block/goodbrook_long_banner_0",
+      "y": 180
+    },
+    "facing=west,part=13": {
+      "model": "medieval_coins:block/goodbrook_long_banner_0",
+      "y": 270
+    },
+    "facing=north,part=14": {
+      "model": "medieval_coins:block/goodbrook_long_banner_0",
+      "y": 0
+    },
+    "facing=east,part=14": {
+      "model": "medieval_coins:block/goodbrook_long_banner_0",
+      "y": 90
+    },
+    "facing=south,part=14": {
+      "model": "medieval_coins:block/goodbrook_long_banner_0",
+      "y": 180
+    },
+    "facing=west,part=14": {
+      "model": "medieval_coins:block/goodbrook_long_banner_0",
+      "y": 270
+    }
+  }
+}

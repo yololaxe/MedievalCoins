@@ -1,0 +1,15 @@
+{
+  "type": "minecraft:smithing_transform",
+  "template": {
+    "item": "medieval_coins:feran_sigil"
+  },
+  "base": {
+    "item": "minecraft:iron_helmet"
+  },
+  "addition": {
+    "item": "minecraft:light_blue_wool"
+  },
+  "result": {
+    "item": "medieval_coins:feran_iron_helmet"
+  }
+}

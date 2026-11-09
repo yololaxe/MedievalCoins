@@ -1,6 +1,9 @@
 package fr.renblood.medievalcoins.commands;
 
 import com.mojang.brigadier.CommandDispatcher;
+import com.mojang.brigadier.suggestion.SuggestionProvider;
+import fr.renblood.medievalcoins.network.ApiExecutor;
+import java.util.concurrent.RejectedExecutionException;
 import com.mojang.brigadier.arguments.IntegerArgumentType;
 import com.mojang.brigadier.arguments.StringArgumentType;
 import fr.renblood.medievalcoins.MedievalCoin;
@@ -36,6 +39,56 @@ public class QuestCommand {
     private static final String NPC_SPAWN_ID_TAG = "ApiNpcSpawnId";
     private static final double NPC_TARGET_DISTANCE = 8.0D;
 
+    private static final SuggestionProvider<CommandSourceStack> ACTIVE_QUESTS = (context, builder) -> {
+        ServerPlayer player;
+        try {
+            player = context.getArgument("target", net.minecraft.commands.arguments.selector.EntitySelector.class)
+                    .findSinglePlayer(context.getSource());
+        } catch (IllegalArgumentException missingTarget) {
+            player = context.getSource().getPlayer();
+        } catch (com.mojang.brigadier.exceptions.CommandSyntaxException noMatch) {
+            return builder.buildFuture();
+        }
+        if (player == null) return builder.buildFuture();
+        String uuid = player.getStringUUID();
+        String remaining = builder.getRemainingLowerCase();
+        String prefix = remaining.startsWith("\"") ? remaining.substring(1) : remaining;
+        try {
+            return ApiExecutor.supply(() -> {
+                try {
+                    ApiClient.getActiveQuests(uuid, "").stream().map(quest -> quest.quest_id)
+                            .filter(id -> id != null && id.toLowerCase(Locale.ROOT).startsWith(prefix)).distinct()
+                            .limit(50).map(StringArgumentType::escapeIfRequired).forEach(builder::suggest);
+                } catch (Exception unavailable) {
+                    // Tab completion remains optional if the quest service is unavailable.
+                }
+                return builder.build();
+            });
+        } catch (RejectedExecutionException busy) {
+            return builder.buildFuture();
+        }
+    };
+
+    private static final SuggestionProvider<CommandSourceStack> QUEST_CATALOG = (context, builder) -> {
+        String prefix = builder.getRemainingLowerCase();
+        try {
+            return ApiExecutor.supply(() -> {
+                try {
+                    ApiClient.getAllQuests("").stream().filter(quest -> quest.questId != null)
+                            .filter(quest -> quest.questId.toLowerCase(Locale.ROOT).startsWith(prefix)
+                                    || (quest.name != null && quest.name.toLowerCase(Locale.ROOT).startsWith(prefix)))
+                            .limit(50).forEach(quest -> builder.suggest(quest.questId,
+                                    Component.literal(quest.name == null ? quest.questId : quest.name)));
+                } catch (Exception unavailable) {
+                    // Tab completion remains optional if the quest service is unavailable.
+                }
+                return builder.build();
+            });
+        } catch (RejectedExecutionException busy) {
+            return builder.buildFuture();
+        }
+    };
+
     @SubscribeEvent
     public static void onRegisterCommands(RegisterCommandsEvent evt) {
         CommandDispatcher<CommandSourceStack> d = evt.getDispatcher();
@@ -52,7 +105,11 @@ public class QuestCommand {
                 })));
 
         d.register(Commands.literal("mc").then(Commands.literal("quest").then(Commands.literal("finish")
-                .then(Commands.argument("questId", StringArgumentType.string())
+                .then(Commands.argument("questId", StringArgumentType.string()).suggests(ACTIVE_QUESTS)
+                .executes(c -> requestManualValidationForAvailableAdmin(
+                    c.getSource(),
+                    StringArgumentType.getString(c, "questId")
+                ))
                         .then(Commands.argument("admin", EntityArgument.player())
                                 .executes(c -> requestManualValidation(
                                         c.getSource(),
@@ -65,7 +122,7 @@ public class QuestCommand {
                 .then(Commands.literal("objective")
                         .then(Commands.literal("validate")
                                 .then(Commands.argument("target", EntityArgument.player())
-                                        .then(Commands.argument("questId", StringArgumentType.string())
+                                        .then(Commands.argument("questId", StringArgumentType.string()).suggests(ACTIVE_QUESTS)
                                                 .then(Commands.argument("objectiveIndex", IntegerArgumentType.integer(1))
                                                         .executes(c -> validateObjective(
                                                                 c.getSource(),
@@ -75,7 +132,7 @@ public class QuestCommand {
                                                         )))))))
                 .then(Commands.literal("validate")
                         .then(Commands.argument("target", EntityArgument.player())
-                                .then(Commands.argument("questId", StringArgumentType.string())
+                                .then(Commands.argument("questId", StringArgumentType.string()).suggests(ACTIVE_QUESTS)
                                         .executes(c -> validateQuest(
                                                 c.getSource(),
                                                 EntityArgument.getPlayer(c, "target"),
@@ -83,21 +140,21 @@ public class QuestCommand {
                                         )))))
                 .then(Commands.literal("refuse")
                         .then(Commands.argument("target", EntityArgument.player())
-                                .then(Commands.argument("questId", StringArgumentType.string())
+                                .then(Commands.argument("questId", StringArgumentType.string()).suggests(ACTIVE_QUESTS)
                                         .executes(c -> refuseQuest(
                                                 c.getSource(),
                                                 EntityArgument.getPlayer(c, "target"),
                                                 StringArgumentType.getString(c, "questId")
                                         )))))
                 .then(Commands.literal("assign")
-                        .then(Commands.argument("quest", StringArgumentType.greedyString())
+                        .then(Commands.argument("quest", StringArgumentType.greedyString()).suggests(QUEST_CATALOG)
                                 .executes(c -> assignQuestToLookedNpc(
                                         c.getSource(),
                                         StringArgumentType.getString(c, "quest"),
                                         true
                                 ))))
                 .then(Commands.literal("unassign")
-                        .then(Commands.argument("quest", StringArgumentType.greedyString())
+                        .then(Commands.argument("quest", StringArgumentType.greedyString()).suggests(QUEST_CATALOG)
                                 .executes(c -> assignQuestToLookedNpc(
                                         c.getSource(),
                                         StringArgumentType.getString(c, "quest"),
@@ -299,6 +356,26 @@ public class QuestCommand {
         });
 
         return 1;
+    }
+
+    private static int requestManualValidationForAvailableAdmin(CommandSourceStack src, String questId) {
+        ServerPlayer requester;
+        try {
+            requester = src.getPlayerOrException();
+        } catch (Exception e) {
+            src.sendFailure(Component.literal("Cette commande doit etre executee en jeu."));
+            return 0;
+        }
+
+        ServerPlayer admin = src.getServer().getPlayerList().getPlayers().stream()
+                .filter(player -> player.createCommandSourceStack().hasPermission(2))
+                .findFirst()
+                .orElse(null);
+        if (admin == null) {
+            src.sendFailure(Component.literal("Aucun admin connecte pour recevoir la demande."));
+            return 0;
+        }
+        return requestManualValidation(src, questId, admin);
     }
 
     private static int validateQuest(CommandSourceStack src, ServerPlayer target, String questId) {

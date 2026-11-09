@@ -1,0 +1,30 @@
+{
+  "loader": "forge:separate_transforms",
+  "textures": {
+    "particle": "medieval_coins:item/chalk_long_banner"
+  },
+  "base": {
+    "parent": "medieval_coins:block/chalk_banner"
+  },
+  "perspectives": {
+    "gui": {
+      "parent": "minecraft:item/generated",
+      "textures": {
+        "layer0": "medieval_coins:item/chalk_long_banner"
+      }
+    },
+    "ground": {
+      "parent": "minecraft:item/generated",
+      "textures": {
+        "layer0": "medieval_coins:item/chalk_long_banner"
+      }
+    },
+    "fixed": {
+      "parent": "minecraft:item/generated",
+      "textures": {
+        "layer0": "medieval_coins:item/chalk_long_banner"
+      }
+    }
+  },
+  "gui_light": "front"
+}

@@ -36,6 +36,12 @@ public class ApiClient {
         return result;
     }
 
+    public static JsonObject getNpcChangesSince(long revision) throws Exception {
+        ModConfig cfg = ModConfig.load();
+        String endpoint = buildUrl(cfg.apiUrl, "/npcs/changes/") + "?since=" + Math.max(0L, revision);
+        return GSON.fromJson(sendGetRequest(endpoint, cfg.apiKey), JsonObject.class);
+    }
+
     public static List<NpcSpawnModel> getNpcSpawns(String worldName) throws Exception {
         return getNpcSpawns(worldName, true);
     }
@@ -308,28 +314,18 @@ public class ApiClient {
     }
 
     public static int deposit(String playerId, int amount) throws Exception {
-        JsonObject body = new JsonObject();
-        body.addProperty("amount", amount);
-        
+        JsonObject body = new JsonObject(); body.addProperty("amount", amount);
         ModConfig cfg = ModConfig.load();
-        String endpoint = buildUrl(cfg.apiUrl, "/players/deposit/" + playerId + "/");
-        String json = sendPostRequest(endpoint, cfg.apiKey, body);
+        String json = sendPostRequest(buildUrl(cfg.apiUrl, "/players/deposit/" + playerId + "/"), cfg.apiKey, body);
         ApiCache.invalidatePrefix("player:");
-        JsonObject resp = GSON.fromJson(json, JsonObject.class);
-        return resp.get("new_balance").getAsInt();
+        return GSON.fromJson(json, JsonObject.class).get("new_balance").getAsInt();
     }
-
     public static int withdraw(String playerId, int coinType, int amount) throws Exception {
-        JsonObject body = new JsonObject();
-        body.addProperty("coin_type", coinType);
-        body.addProperty("amount", amount);
-        
+        JsonObject body = new JsonObject(); body.addProperty("coin_type", coinType); body.addProperty("amount", amount);
         ModConfig cfg = ModConfig.load();
-        String endpoint = buildUrl(cfg.apiUrl, "/players/withdraw/" + playerId + "/");
-        String json = sendPostRequest(endpoint, cfg.apiKey, body);
+        String json = sendPostRequest(buildUrl(cfg.apiUrl, "/players/withdraw/" + playerId + "/"), cfg.apiKey, body);
         ApiCache.invalidatePrefix("player:");
-        JsonObject resp = GSON.fromJson(json, JsonObject.class);
-        return resp.get("new_balance").getAsInt();
+        return GSON.fromJson(json, JsonObject.class).get("new_balance").getAsInt();
     }
 
     // --- HELPERS HTTP ---

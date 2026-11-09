@@ -1,0 +1,20 @@
+{
+  "variants": {
+    "facing=north": {
+      "model": "medieval_coins:block/roxton_flag",
+      "y": 0
+    },
+    "facing=east": {
+      "model": "medieval_coins:block/roxton_flag",
+      "y": 90
+    },
+    "facing=south": {
+      "model": "medieval_coins:block/roxton_flag",
+      "y": 180
+    },
+    "facing=west": {
+      "model": "medieval_coins:block/roxton_flag",
+      "y": 270
+    }
+  }
+}

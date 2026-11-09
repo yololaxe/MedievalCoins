@@ -20,6 +20,7 @@ def autoIncrementBuildVersion = {
                 || taskName.endsWith(':jar')
                 || taskName.endsWith(':reobfjar')
                 || taskName.contains('deploy')
+                || taskName.contains('pipeline')
     }
     if (!shouldIncrement) return mod_version
 
@@ -157,6 +158,13 @@ tasks.register('deployToModrinth', Copy) {
     dependsOn 'reobfJar'
     from tasks.named('jar').flatMap { it.archiveFile }
     into file('C:\\Users\\alban\\AppData\\Roaming\\ModrinthApp\\profiles\\Test Mods RP\\mods')
+    doFirst {
+        delete fileTree(destinationDir) { include "${mod_id}-*.jar" }
+        copy {
+            from tasks.named('jar').flatMap { it.archiveFile }
+            into file('D:/Projets/Projet/mods')
+        }
+    }
 }
 
 tasks.register('deployToMedievalStructures', Copy) {
@@ -167,6 +175,42 @@ tasks.register('deployToMedievalStructures', Copy) {
 
 tasks.named('build').configure {
     finalizedBy 'deployToModrinth', 'deployToMedievalStructures'
+}
+
+def testProfileMods = file('C:/Users/alban/AppData/Roaming/ModrinthApp/profiles/Test Mods RP/mods')
+def serverProfileMods = file('C:/Users/alban/AppData/Roaming/ModrinthApp/profiles/MAJ-RP-2024-1.20.1/mods')
+def localServerMods = file('D:/Projets/Projet/localhost/_server1.20.1/mods')
+def archiveMods = file('D:/Projets/Projet/mods')
+
+def installLatestJar = { File destination ->
+    delete fileTree(destination) { include "${mod_id}-*.jar" }
+    copy {
+        from tasks.named('jar').flatMap { it.archiveFile }
+        into destination
+    }
+}
+
+tasks.register('pipelineTest') {
+    dependsOn 'reobfJar'
+    doLast {
+        installLatestJar(testProfileMods)
+        copy { from tasks.named('jar').flatMap { it.archiveFile }; into archiveMods }
+        installLatestJar(file('D:/Projets/Projet/mods/MedievalStructures/libs'))
+    }
+}
+
+tasks.register('pipelineServer') {
+    dependsOn 'reobfJar'
+    doLast {
+        installLatestJar(serverProfileMods)
+        installLatestJar(localServerMods)
+        copy { from tasks.named('jar').flatMap { it.archiveFile }; into archiveMods }
+        installLatestJar(file('D:/Projets/Projet/mods/MedievalStructures/libs'))
+    }
+}
+
+tasks.register('pipelineAll') {
+    dependsOn 'pipelineTest', 'pipelineServer'
 }
 
 tasks.withType(JavaCompile).configureEach {

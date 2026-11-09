@@ -7,11 +7,14 @@ import com.mojang.brigadier.arguments.IntegerArgumentType;
 import com.mojang.brigadier.arguments.StringArgumentType;
 import fr.renblood.medievalcoins.MedievalCoin;
 import fr.renblood.medievalcoins.api.MedievalCoinsAPI;
+import fr.renblood.medievalcoins.api.model.PlayerModel;
 import fr.renblood.medievalcoins.config.ModConfig;
 import fr.renblood.medievalcoins.events.PlayerStatsHandler;
 import fr.renblood.medievalcoins.events.TimeManager;
 import fr.renblood.medievalcoins.land.LandCommands;
+import fr.renblood.medievalcoins.network.ApiCache;
 import fr.renblood.medievalcoins.network.ApiClient;
+import fr.renblood.medievalcoins.network.ApiExecutor;
 import fr.renblood.medievalcoins.network.PlayerCache;
 import fr.renblood.medievalcoins.market.command.MarketCommands;
 import fr.renblood.medievalcoins.market.service.MarketPermissions;
@@ -29,6 +32,7 @@ import net.minecraftforge.event.RegisterCommandsEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
@@ -52,7 +56,9 @@ public class ModCommands {
                 .executes(c -> showPlayerHelp(c.getSource()))
                 .then(Commands.literal("help").executes(c -> showPlayerHelp(c.getSource())))
                 .then(Commands.literal("status").executes(c -> showPlayerStatus(c.getSource())))
+                .then(Commands.literal("land").redirect(dispatcher.getRoot().getChild("land")))
                 .then(tutoCommands())
+                .then(PlayerLinkCommand.command())
                 .then(Commands.literal("ability")
                         .executes(c -> showAbilityHelp(c.getSource()))
                         .then(Commands.literal("help").executes(c -> showAbilityHelp(c.getSource()))))
@@ -98,6 +104,8 @@ public class ModCommands {
     private static com.mojang.brigadier.builder.LiteralArgumentBuilder<CommandSourceStack> tutoCommands() {
         return Commands.literal("tuto")
                 .executes(c -> TutorialManager.status(c.getSource().getPlayerOrException()))
+                .then(Commands.literal("start")
+                        .executes(c -> TutorialManager.begin(c.getSource().getPlayerOrException(), false)))
                 .then(Commands.literal("guide")
                         .executes(c -> TutorialManager.toggleGuide(c.getSource().getPlayerOrException())))
                 .then(Commands.literal("confirm-counter-break")
@@ -194,6 +202,7 @@ public class ModCommands {
     private static int showPlayerHelp(CommandSourceStack src) {
         sendHeader(src, "Medieval Coins - Commandes joueur");
         sendLine(src, "/mc quest", "Ouvrir le journal de quetes.");
+        sendLine(src, "/mc land map", "Afficher la carte des parcelles et proprietaires.");
         sendLine(src, "/mc tuto", "Afficher l'etat du tutoriel Nagaki.");
         sendLine(src, "/mc quest finish <quete> <admin>", "Demander la validation manuelle d'une quete.");
         sendLine(src, "/mc ability <capacite>", "Activer ou desactiver une capacite.");
@@ -370,19 +379,34 @@ public class ModCommands {
     }
 
     private static int refreshPlayers(CommandSourceStack src) {
-        fr.renblood.medievalcoins.network.ApiExecutor.execute(() -> {
-            try {
-                String rank = ModConfig.load().apiKey.isEmpty() ? "citoyen" : "admin";
-                var players = ApiClient.getPlayers(rank);
-                PlayerCache.setPlayers(players);
-                src.getServer().execute(() ->
-                        src.sendSuccess(() -> Component.translatable("message.medieval_coins.config_refresh_success", players.size()), true)
-                );
-            } catch (Exception e) {
-                src.getServer().execute(() ->
-                        src.sendFailure(Component.translatable("message.medieval_coins.config_refresh_fail", e.getMessage()))
-                );
+        var connectedPlayers = src.getServer().getPlayerList().getPlayers().stream()
+                .map(ServerPlayer::getStringUUID).toList();
+        ApiExecutor.execute(() -> {
+            List<PlayerModel> refreshed = new ArrayList<>();
+            String firstError = null;
+            for (String uuid : connectedPlayers) {
+                try {
+                    ApiCache.invalidatePrefix("player:" + uuid);
+                    PlayerModel player = ApiClient.getPlayer(uuid);
+                    if (player == null || !uuid.equals(player.id_minecraft)) {
+                        throw new IllegalStateException("Le personnage Minecraft n’a pas été retrouvé.");
+                    }
+                    refreshed.add(player);
+                } catch (Exception failure) {
+                    if (firstError == null) firstError = failure.getMessage();
+                }
             }
+            String error = firstError;
+            src.getServer().execute(() -> {
+                refreshed.forEach(PlayerCache::updatePlayer);
+                if (error == null || !refreshed.isEmpty()) {
+                    src.sendSuccess(() -> Component.translatable(
+                            "message.medieval_coins.config_refresh_success", refreshed.size()), true);
+                }
+                if (error != null) {
+                    src.sendFailure(Component.translatable("message.medieval_coins.config_refresh_fail", error));
+                }
+            });
         });
         return 1;
     }

@@ -21,6 +21,9 @@ public class ModConfig {
 
     public String apiUrl = "http://127.0.0.1:8000";
     public String apiKey = "";
+    // Server-only proof of game ownership; never distribute in website environment files.
+    public String playerLinkServerId = "";
+    public String playerLinkKey = "";
     public int apiConnectTimeoutMs = 4000;
     public int apiReadTimeoutMs = 6000;
     public int apiRetryCount = 2;

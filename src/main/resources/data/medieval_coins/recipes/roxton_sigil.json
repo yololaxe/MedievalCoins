@@ -1,0 +1,30 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "equipment",
+  "pattern": [
+    " A ",
+    "DPG",
+    " B "
+  ],
+  "key": {
+    "A": {
+      "item": "minecraft:orange_dye"
+    },
+    "D": {
+      "item": "minecraft:red_dye"
+    },
+    "P": {
+      "item": "minecraft:paper"
+    },
+    "G": {
+      "item": "minecraft:gold_nugget"
+    },
+    "B": {
+      "item": "minecraft:black_dye"
+    }
+  },
+  "result": {
+    "item": "medieval_coins:roxton_sigil",
+    "count": 4
+  }
+}

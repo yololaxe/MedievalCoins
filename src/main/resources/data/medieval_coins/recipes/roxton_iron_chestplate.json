@@ -1,0 +1,15 @@
+{
+  "type": "minecraft:smithing_transform",
+  "template": {
+    "item": "medieval_coins:roxton_sigil"
+  },
+  "base": {
+    "item": "minecraft:iron_chestplate"
+  },
+  "addition": {
+    "item": "minecraft:orange_wool"
+  },
+  "result": {
+    "item": "medieval_coins:roxton_iron_chestplate"
+  }
+}

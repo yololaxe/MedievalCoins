@@ -6,7 +6,8 @@ import fr.renblood.medievalcoins.MedievalCoin;
 import fr.renblood.medievalcoins.network.ChangeGUIButtonMessage;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.ImageButton;
-import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
+import fr.renblood.medievalcoins.client.economy.AdaptiveEconomyScreen;
+import fr.renblood.medievalcoins.client.economy.EconomyUi;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.player.Inventory;
@@ -15,7 +16,7 @@ import net.minecraft.world.level.Level;
 
 import java.util.HashMap;
 
-public class ChangeGUIScreen extends AbstractContainerScreen<ChangeGUIMenu> {
+public class ChangeGUIScreen extends AdaptiveEconomyScreen<ChangeGUIMenu> {
 	private static final ResourceLocation TEXTURE =
 			new ResourceLocation("medieval_coins:textures/gui/change_gui.png");
 	private static final HashMap<String, Object> guistate = ChangeGUIMenu.guistate;
@@ -115,9 +116,9 @@ public class ChangeGUIScreen extends AbstractContainerScreen<ChangeGUIMenu> {
 	}
 
 	@Override
-	public void render(GuiGraphics gg, int mouseX, int mouseY, float partialTicks) {
+	public void renderLogical(GuiGraphics gg, int mouseX, int mouseY, float partialTicks) {
 		this.renderBackground(gg);
-		super.render(gg, mouseX, mouseY, partialTicks);
+		super.renderLogical(gg, mouseX, mouseY, partialTicks);
 		this.renderTooltip(gg, mouseX, mouseY);
 	}
 

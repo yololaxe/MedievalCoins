@@ -27,12 +27,12 @@ public class BankerGuiRefreshMessage {
             String mcId = sender.getStringUUID();
             ApiExecutor.execute(() -> {
             try {
-                PlayerModel pm = ApiClient.getPlayer(mcId);
+                long balance = fr.renblood.medievalcoins.bank.BankProtocol.balance(mcId);
                 sender.getServer().execute(() -> {
-                    PlayerCache.updatePlayer(pm);
+
                     MedievalCoin.PACKET_HANDLER.send(
                             PacketDistributor.PLAYER.with(() -> sender),
-                            new MoneyUpdateMessage(pm.id_minecraft, pm.money)
+                            new MoneyUpdateMessage(mcId, balance)
                     );
                 });
             } catch (Exception e) {

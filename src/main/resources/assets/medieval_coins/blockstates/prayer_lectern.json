@@ -1,0 +1,8 @@
+{
+  "variants": {
+    "facing=north": { "model": "medieval_coins:block/prayer_lectern", "y": 0 },
+    "facing=south": { "model": "medieval_coins:block/prayer_lectern", "y": 180 },
+    "facing=west":  { "model": "medieval_coins:block/prayer_lectern", "y": 270 },
+    "facing=east":  { "model": "medieval_coins:block/prayer_lectern", "y": 90 }
+  }
+}

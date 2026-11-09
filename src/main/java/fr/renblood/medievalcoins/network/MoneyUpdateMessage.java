@@ -9,21 +9,21 @@ import java.util.function.Supplier;
 
 public class MoneyUpdateMessage {
     public final String mcId;
-    public final double newMoney;
+    public final long newMoney;
 
-    public MoneyUpdateMessage(String mcId, double newMoney) {
+    public MoneyUpdateMessage(String mcId, long newMoney) {
         this.mcId     = mcId;
         this.newMoney = newMoney;
     }
 
     public static void encode(MoneyUpdateMessage msg, FriendlyByteBuf buf) {
         buf.writeUtf(msg.mcId, 255);
-        buf.writeDouble(msg.newMoney);
+        buf.writeLong(msg.newMoney);
     }
 
     public static MoneyUpdateMessage decode(FriendlyByteBuf buf) {
         String id = buf.readUtf(255);
-        double m  = buf.readDouble();
+        long m  = buf.readLong();
         return new MoneyUpdateMessage(id, m);
     }
 

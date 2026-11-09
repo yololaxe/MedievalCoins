@@ -45,7 +45,12 @@ public class ChangeGUIMenu extends AbstractContainerMenu implements Supplier<Map
 		this.access = ContainerLevelAccess.create(world, pos);
 
 		// 1) On crée le handler à 12 slots
-		this.internal = new ItemStackHandler(12);
+		this.internal = new ItemStackHandler(12) {
+            @Override protected void onContentsChanged(int slot) {
+                entity.getPersistentData().put("renblood_bank_change", serializeNBT());
+            }
+        };
+        if (entity.getPersistentData().contains("renblood_bank_change")) internal.deserializeNBT(entity.getPersistentData().getCompound("renblood_bank_change"));
 
 		// 2) On pré-remplit les slots d’« input » pour chaque conversion
 		//    (permet d’avoir directement 64 unités à transformer)
@@ -173,34 +178,19 @@ public class ChangeGUIMenu extends AbstractContainerMenu implements Supplier<Map
 	}
 
 
-	@Override
-	public void removed(Player player) {
-		super.removed(player);
-
-		// calcul du point devant le joueur
-		Direction look = player.getDirection();
-		double offsetX = look.getStepX() * 0.5;
-		double offsetZ = look.getStepZ() * 0.5;
-		double spawnX = player.getX() + offsetX;
-		double spawnY = player.getY() + 1.0;
-		double spawnZ = player.getZ() + offsetZ;
-
-		// 1) Pour ChangeGUIMenu : vider internal
-		for (int i = 0; i < this.internal.getSlots(); i++) {
-			ItemStack stack = this.internal.extractItem(i, Integer.MAX_VALUE, false);
-			if (!stack.isEmpty()) {
-				if (!player.getInventory().add(stack)) {
-					ItemEntity dropped = new ItemEntity(player.level(), spawnX, spawnY, spawnZ, stack);
-					player.level().addFreshEntity(dropped);
-				}
-			}
-		}
-
-		// 2) Procédure existante
-		ChangeGUIClosedProcedure.execute(world, player);
-	}
-
-
+    @Override public void removed(Player player) {
+        super.removed(player);
+        if (player.level().isClientSide) return;
+        for (int i=0;i<internal.getSlots();i++) {
+            ItemStack remaining=internal.extractItem(i,Integer.MAX_VALUE,false);
+            if(!remaining.isEmpty()) {player.getInventory().add(remaining);if(!remaining.isEmpty())internal.setStackInSlot(i,remaining);}
+        }
+        entity.getPersistentData().put("renblood_bank_change",internal.serializeNBT());
+        if(player instanceof net.minecraft.server.level.ServerPlayer serverPlayer){
+            try{fr.renblood.medievalcoins.bank.BankPlayerSnapshot.save(serverPlayer);}
+            catch(Exception error){fr.renblood.medievalcoins.MedievalCoin.LOGGER.error("Change escrow save unverified",error);}
+        }
+    }
 
 	@Override public Map<Integer, Slot> get() {
 		return customSlots;

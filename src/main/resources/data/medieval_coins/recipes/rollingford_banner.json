@@ -1,0 +1,24 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "equipment",
+  "pattern": [
+    " S ",
+    "WHW",
+    " W "
+  ],
+  "key": {
+    "S": {
+      "item": "minecraft:stick"
+    },
+    "W": {
+      "item": "minecraft:brown_wool"
+    },
+    "H": {
+      "item": "medieval_coins:rollingford_sigil"
+    }
+  },
+  "result": {
+    "item": "medieval_coins:rollingford_banner",
+    "count": 1
+  }
+}

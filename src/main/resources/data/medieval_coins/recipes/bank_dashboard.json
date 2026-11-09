@@ -1,0 +1,26 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "pattern": [
+    "SSS",
+    "BCB",
+    "DSD"
+  ],
+  "key": {
+    "S": {
+      "tag": "minecraft:wooden_slabs"
+    },
+    "B": {
+      "item": "minecraft:book"
+    },
+    "C": {
+      "item": "medieval_coins:bronze_coin"
+    },
+    "D": {
+      "item": "minecraft:polished_diorite"
+    }
+  },
+  "result": {
+    "item": "medieval_coins:bank_dashboard",
+    "count": 1
+  }
+}

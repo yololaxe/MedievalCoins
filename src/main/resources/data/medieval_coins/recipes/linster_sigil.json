@@ -1,0 +1,30 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "equipment",
+  "pattern": [
+    " A ",
+    "DPG",
+    " B "
+  ],
+  "key": {
+    "A": {
+      "item": "minecraft:red_dye"
+    },
+    "D": {
+      "item": "minecraft:yellow_dye"
+    },
+    "P": {
+      "item": "minecraft:paper"
+    },
+    "G": {
+      "item": "minecraft:gold_nugget"
+    },
+    "B": {
+      "item": "minecraft:black_dye"
+    }
+  },
+  "result": {
+    "item": "medieval_coins:linster_sigil",
+    "count": 4
+  }
+}
