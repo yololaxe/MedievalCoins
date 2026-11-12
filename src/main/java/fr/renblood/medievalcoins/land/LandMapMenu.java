@@ -27,12 +27,29 @@ public class LandMapMenu extends AbstractContainerMenu {
     private static final int START_Y = 18;
     private static final Pattern HEX_COLOR = Pattern.compile("^#?[0-9a-fA-F]{6}$");
 
+    private int centerX, centerZ;
+    private String dimension="";
+    private boolean administrator;
+    private boolean optionsTruncated;
+    public boolean optionsTruncated(){return optionsTruncated;}
+    private java.util.List<PlotChoice> choices=java.util.List.of();
+    private long nextActionTick;
+    public record PlotChoice(String id,String name){}
+    public boolean isAdministrator(){return administrator;}
+    public java.util.List<PlotChoice> choices(){return choices;}
+    public net.minecraft.nbt.CompoundTag cell(int index){if(index<0||index>=slots.size())return new net.minecraft.nbt.CompoundTag();var stack=slots.get(index).getItem();return stack.isEmpty()||!stack.hasTag()?new net.minecraft.nbt.CompoundTag():stack.getTag().getCompound("Land");}
+    public int centerX(){var tag=cell(columns/2+(rows/2)*columns);return tag.contains("x")?tag.getInt("x"):centerX;}
+    public int centerZ(){var tag=cell(columns/2+(rows/2)*columns);return tag.contains("z")?tag.getInt("z"):centerZ;}
+    public String dimension(){return dimension;}
     private final SimpleContainer container;
     private final int columns;
     private final int rows;
 
     public LandMapMenu(int containerId, Inventory playerInventory, FriendlyByteBuf buffer) {
         this(containerId, playerInventory, readColumns(buffer), readRows(buffer), null);
+        centerX=buffer.readInt();centerZ=buffer.readInt();dimension=buffer.readUtf(128);administrator=buffer.readBoolean();
+        int count=buffer.readVarInt();if(count<0||count>2048)throw new IllegalArgumentException("Invalid plot count");
+        var list=new java.util.ArrayList<PlotChoice>();for(int i=0;i<count;i++)list.add(new PlotChoice(buffer.readUtf(128),buffer.readUtf(128)));choices=java.util.List.copyOf(list);optionsTruncated=buffer.readBoolean();
     }
 
     public LandMapMenu(int containerId, Inventory playerInventory, ServerPlayer player) {
@@ -53,13 +70,17 @@ public class LandMapMenu extends AbstractContainerMenu {
         }
 
         if (player != null) {
-            fillForPlayer(player);
+            centerX=player.chunkPosition().x;centerZ=player.chunkPosition().z;dimension=player.level().dimension().location().toString();administrator=LandConfig.canAdmin(player.createCommandSourceStack());
+            choices=options(player);fillForPlayer(player);
         }
     }
 
-    public static void writeOpenData(FriendlyByteBuf buffer) {
+    public static void writeOpenData(FriendlyByteBuf buffer, ServerPlayer player) {
         buffer.writeVarInt(computeColumns());
         buffer.writeVarInt(computeRows());
+        buffer.writeInt(player.chunkPosition().x);buffer.writeInt(player.chunkPosition().z);buffer.writeUtf(player.level().dimension().location().toString(),128);
+        boolean admin=LandConfig.canAdmin(player.createCommandSourceStack());buffer.writeBoolean(admin);
+        var options=admin?options(player):java.util.List.<PlotChoice>of();buffer.writeVarInt(options.size());for(var option:options){buffer.writeUtf(option.id(),128);buffer.writeUtf(option.name(),128);}buffer.writeBoolean(admin&&options.size()<LandRegistry.size());
     }
 
     public int getColumns() {
@@ -72,7 +93,7 @@ public class LandMapMenu extends AbstractContainerMenu {
 
     @Override
     public boolean stillValid(Player player) {
-        return true;
+        return player.level().dimension().location().toString().equals(dimension);
     }
 
     @Override
@@ -81,7 +102,7 @@ public class LandMapMenu extends AbstractContainerMenu {
     }
 
     private void fillForPlayer(ServerPlayer player) {
-        ChunkPos center = player.chunkPosition();
+        ChunkPos center = new ChunkPos(centerX,centerZ);
         int radiusX = Math.min(LandConfig.get().getMapRadiusX(), (columns - 1) / 2);
         int radiusZ = Math.min(LandConfig.get().getMapRadiusZ(), (rows - 1) / 2);
 
@@ -92,7 +113,7 @@ public class LandMapMenu extends AbstractContainerMenu {
             for (int col = 0; col < columns; col++) {
                 int chunkX = minChunkX + col;
                 int chunkZ = minChunkZ + row;
-                boolean currentChunk = chunkX == center.x && chunkZ == center.z;
+                boolean currentChunk = chunkX == player.chunkPosition().x && chunkZ == player.chunkPosition().z;
                 Optional<LandPlot> plot = LandRegistry.findAt(player.level().dimension(), chunkX, chunkZ);
                 container.setItem(col + row * columns, createChunkStack(chunkX, chunkZ, center.x, center.z, plot, currentChunk));
             }
@@ -114,6 +135,8 @@ public class LandMapMenu extends AbstractContainerMenu {
                         .withStyle(currentChunk ? ChatFormatting.GOLD : ChatFormatting.WHITE))
                 .orElse(Component.literal((currentChunk ? "> " : "") + "Chunk non attribue")
                         .withStyle(currentChunk ? ChatFormatting.GOLD : ChatFormatting.DARK_GRAY));
+        var tag=stack.getOrCreateTagElement("Land");tag.putInt("x",chunkX);tag.putInt("z",chunkZ);
+        plot.ifPresent(value->{tag.putString("id",value.getId());tag.putString("name",value.getDisplayName());tag.putString("owner",value.getOwner());tag.putString("type",value.getOwnerType().name());tag.putString("city",value.getCity());tag.putString("description",value.getDescription());tag.putInt("color",LandMapRules.color(value.getColor(),value.getOwnerType().name()));});
         stack.setHoverName(name);
         addTooltip(stack, chunkX, chunkZ, centerX, centerZ, plot);
         return stack;
@@ -155,6 +178,35 @@ public class LandMapMenu extends AbstractContainerMenu {
         }
 
         stack.getOrCreateTagElement("display").put("Lore", lore);
+    }
+
+    private static java.util.List<PlotChoice> options(ServerPlayer player){
+        var result=new java.util.ArrayList<PlotChoice>();int bytes=0;
+        for(var plot:LandRegistry.getPlots()){
+            if(plot.getId().length()>128||plot.getDisplayName().length()>128||!plot.getDimension().isBlank()&&!plot.getDimension().equalsIgnoreCase(player.level().dimension().location().toString()))continue;
+            int cost=plot.getId().getBytes(java.nio.charset.StandardCharsets.UTF_8).length+plot.getDisplayName().getBytes(java.nio.charset.StandardCharsets.UTF_8).length+8;
+            if(bytes+cost>24000||result.size()>=2048)break;
+            result.add(new PlotChoice(plot.getId(),plot.getDisplayName()));bytes+=cost;
+        }
+        return java.util.List.copyOf(result);
+    }
+    public void handle(ServerPlayer player,LandMapAction action){
+        long tick=player.level().getGameTime();if(!stillValid(player)||!LandConfig.get().isEnableLandSystem())return;if(action.action()<=1){if(tick<nextActionTick)return;nextActionTick=tick+4;}
+        if(action.action()==0){
+            int x=action.x()==99?player.chunkPosition().x:centerX+Integer.signum(action.x());
+            int z=action.x()==99?player.chunkPosition().z:centerZ+Integer.signum(action.z());
+            if(!LandMapRules.nearby(x,z,player.chunkPosition().x,player.chunkPosition().z))return;
+            centerX=x;centerZ=z;fillForPlayer(player);broadcastChanges();return;
+        }
+        if(action.action()==1){fillForPlayer(player);broadcastChanges();return;}
+        if(!LandConfig.canAdmin(player.createCommandSourceStack())){player.sendSystemMessage(Component.literal("L’attribution des terrains est réservée aux administrateurs."));return;}
+        if(action.action()!=2&&action.action()!=3)return;
+        if(!LandMapRules.visible(action.x(),action.z(),centerX,centerZ,columns,rows)||!LandMapRules.nearby(action.x(),action.z(),player.chunkPosition().x,player.chunkPosition().z)){player.sendSystemMessage(Component.literal("Ce chunk n’est plus dans la carte affichée. Actualise le cadastre."));return;}
+        try{
+            var plots=LandStorage.loadForEdit();
+            LandClaimEditor.apply(plots,dimension,action.x(),action.z(),action.target(),action.expected(),action.action()==3);
+            LandStorage.saveAndReload(plots);LandPlayerTracker.clear();fillForPlayer(player);broadcastChanges();player.sendSystemMessage(Component.literal(action.action()==2?"Chunk attribué. Le cadastre est à jour.":"Attribution retirée. La parcelle et ses autres chunks sont conservés.").withStyle(net.minecraft.ChatFormatting.GREEN));
+        }catch(Exception failure){player.sendSystemMessage(Component.literal("Cadastre : "+failure.getMessage()).withStyle(net.minecraft.ChatFormatting.RED));}
     }
 
     private static Item itemFor(LandOwnerType ownerType) {

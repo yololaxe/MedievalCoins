@@ -26,7 +26,7 @@ public final class LandStorage {
     }
 
     public static synchronized void save(List<LandPlot> plots) throws IOException {
-        LandFile data = readFile();
+        LandFile data = readFileStrict();
         data.plots = plots == null ? new ArrayList<>() : new ArrayList<>(plots);
         writeFile(data);
         LandRegistry.replaceAll(data.plots);
@@ -45,6 +45,23 @@ public final class LandStorage {
 
     public static Path getFile() {
         return FILE;
+    }
+
+    public static synchronized List<LandPlot> loadForEdit() throws IOException {return readFileStrict().plots;}
+    private static LandFile readFileStrict() throws IOException {
+        ensureFileExists();
+        try(Reader reader=Files.newBufferedReader(FILE,StandardCharsets.UTF_8)){
+            LandFile data=GSON.fromJson(reader,LandFile.class);
+            if(data==null||data.plots==null)throw new IOException("Cadastre incomplet : aucune modification enregistrée.");
+            java.util.Set<String> ids=new java.util.HashSet<>(),chunks=new java.util.HashSet<>();
+            for(LandPlot plot:data.plots){
+                if(plot==null||plot.getId().isBlank()||!ids.add(plot.getId().toLowerCase(java.util.Locale.ROOT)))throw new IOException("Identifiant de parcelle absent ou dupliqué.");
+                for(var chunk:plot.getChunks()){
+                    if(chunk==null||plot.getDimension().isBlank()||!chunks.add(plot.getDimension()+":"+chunk.getX()+":"+chunk.getZ()))throw new IOException("Attribution de chunk invalide ou dupliquée. Vérifiez lands.json.");
+                }
+            }
+            return data;
+        }catch(com.google.gson.JsonParseException|IllegalStateException invalid){throw new IOException("lands.json illisible : le fichier existant a été conservé.",invalid);}
     }
 
     private static LandFile readFile() {
@@ -67,9 +84,13 @@ public final class LandStorage {
 
     private static void writeFile(LandFile data) throws IOException {
         Files.createDirectories(FILE.getParent());
-        try (Writer writer = Files.newBufferedWriter(FILE, StandardCharsets.UTF_8)) {
-            GSON.toJson(data, writer);
-        }
+        Path temporary=Files.createTempFile(FILE.getParent(),"lands-",".tmp");
+        try {
+            Files.writeString(temporary,GSON.toJson(data),StandardCharsets.UTF_8);
+            if(Files.exists(FILE))Files.copy(FILE,FILE.resolveSibling("lands.json.bak"),java.nio.file.StandardCopyOption.REPLACE_EXISTING);
+            try{Files.move(temporary,FILE,java.nio.file.StandardCopyOption.ATOMIC_MOVE,java.nio.file.StandardCopyOption.REPLACE_EXISTING);}
+            catch(java.nio.file.AtomicMoveNotSupportedException unsupported){Files.move(temporary,FILE,java.nio.file.StandardCopyOption.REPLACE_EXISTING);}
+        }finally{Files.deleteIfExists(temporary);}
     }
 
     private static void ensureFileExists() {

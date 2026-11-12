@@ -25,7 +25,7 @@ public final class LandCommands {
     }
 
     public static void register(CommandDispatcher<CommandSourceStack> dispatcher) {
-        dispatcher.register(Commands.literal("land")
+        dispatcher.register(Commands.literal("land").executes(context -> openMap(context.getSource()))
                 .then(Commands.literal("reload")
                         .requires(LandConfig::canAdmin)
                         .executes(context -> reload(context.getSource())))
@@ -138,7 +138,7 @@ public final class LandCommands {
         return count;
     }
 
-    private static int openMap(CommandSourceStack source) {
+    public static int openMap(CommandSourceStack source) {
         ServerPlayer player = getPlayer(source);
         if (player == null) {
             return 0;
@@ -153,7 +153,7 @@ public final class LandCommands {
                 new SimpleMenuProvider(
                         (containerId, inventory, ignored) -> new LandMapMenu(containerId, inventory, player),
                         Component.literal("Cadastre local")),
-                LandMapMenu::writeOpenData);
+                buffer -> LandMapMenu.writeOpenData(buffer, player));
         return 1;
     }
 
@@ -319,9 +319,9 @@ public final class LandCommands {
         return LandRegistry.findAt(player.level().dimension(), chunk.x, chunk.z)
                 .map(plot -> sendPlotInfo(source, plot, chunk))
                 .orElseGet(() -> {
-                    source.sendFailure(Component.literal("Aucune parcelle sur ce chunk ("
-                            + player.level().dimension().location() + " " + chunk.x + "," + chunk.z + ")."));
-                    return 0;
+                    source.sendSuccess(()->Component.literal("Chunk "+chunk.x+", "+chunk.z+" · Aucun propriétaire attribué.").withStyle(ChatFormatting.GRAY),false);
+                    source.sendSuccess(()->Component.literal("[Ouvrir le cadastre]").withStyle(style->style.withColor(ChatFormatting.GOLD).withClickEvent(new net.minecraft.network.chat.ClickEvent(net.minecraft.network.chat.ClickEvent.Action.RUN_COMMAND,"/mc land"))),false);
+                    return 1;
                 });
     }
 
@@ -359,7 +359,7 @@ public final class LandCommands {
         source.sendSuccess(() -> Component.literal("Ville : " + valueOrDash(plot.getCity())), false);
         source.sendSuccess(() -> Component.literal("Dimension : " + plot.getDimension()), false);
         source.sendSuccess(() -> Component.literal("Chunk : " + chunk.x + "," + chunk.z), false);
-        source.sendSuccess(() -> Component.literal("Proprietaire : " + valueOrDash(plot.getOwner())
+        source.sendSuccess(() -> Component.literal("Propriétaire : " + valueOrDash(plot.getOwner())
                 + " (" + plot.getOwnerType().name().toLowerCase() + ")"), false);
         source.sendSuccess(() -> Component.literal("Couleur : " + valueOrDash(plot.getColor())), false);
         if (!plot.getDescription().isBlank()) {

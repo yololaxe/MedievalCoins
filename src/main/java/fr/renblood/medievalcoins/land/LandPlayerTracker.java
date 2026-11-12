@@ -27,6 +27,7 @@ public final class LandPlayerTracker {
             return;
         }
 
+        if(player.tickCount%10!=0)return;
         LandConfig.LandConfigData config = LandConfig.get();
         if (!config.isEnableLandSystem() || !config.isShowActionBarOnEnter()) {
             return;
@@ -45,13 +46,14 @@ public final class LandPlayerTracker {
         String currentPlotId = currentPlot.map(LandPlot::getId).orElse("");
         LAST_POSITIONS.put(playerId, new PlayerLandPosition(dimension, chunk.x, chunk.z, currentPlotId));
 
-        if (previous == null || currentPlot.isEmpty() || currentPlotId.equals(previous.plotId())) {
+        if(previous!=null&&currentPlotId.equals(previous.plotId()))return;
+        if(currentPlot.isEmpty()){
+            if(previous!=null&&!previous.plotId().isBlank())player.displayClientMessage(Component.literal("Territoire non attribué").withStyle(net.minecraft.ChatFormatting.GRAY),true);
             return;
         }
-
-        LandPlot plot = currentPlot.get();
-        player.displayClientMessage(Component.literal(plot.getDisplayName()
-                + " \u2014 Propri\u00e9taire : " + ownerName(plot)), true);
+        LandPlot plot=currentPlot.get();
+        player.displayClientMessage(Component.literal(plot.getDisplayName()).withStyle(style->style.withColor(LandMapRules.color(plot.getColor(),plot.getOwnerType().name())))
+                .append(Component.literal("  ·  Propriétaire : "+ownerName(plot)).withStyle(net.minecraft.ChatFormatting.WHITE)),true);
     }
 
     @SubscribeEvent

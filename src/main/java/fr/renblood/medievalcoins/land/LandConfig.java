@@ -16,17 +16,19 @@ import java.nio.file.Path;
 public final class LandConfig {
     private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
     private static final Path FILE = FMLPaths.CONFIGDIR.get().resolve("medievalcoins").resolve("land_config.json");
+    private static boolean initialized;
     private static LandConfigData current = new LandConfigData();
 
     private LandConfig() {
     }
 
     public static synchronized LandConfigData get() {
-        ensureFileExists();
+        if(!initialized)reload();
         return current;
     }
 
     public static synchronized LandConfigData reload() {
+        initialized=true;
         ensureFileExists();
 
         try (Reader reader = Files.newBufferedReader(FILE, StandardCharsets.UTF_8)) {
