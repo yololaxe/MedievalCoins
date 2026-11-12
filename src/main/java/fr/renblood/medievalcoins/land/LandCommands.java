@@ -29,6 +29,7 @@ public final class LandCommands {
                 .then(Commands.literal("reload")
                         .requires(LandConfig::canAdmin)
                         .executes(context -> reload(context.getSource())))
+                .then(Commands.literal("sync").executes(context -> LandWebSync.request(context.getSource())))
                 .then(Commands.literal("map")
                         .executes(context -> openMap(context.getSource())))
                 .then(Commands.literal("create")
@@ -330,6 +331,11 @@ public final class LandCommands {
                 ? LandRegistry.getPlots()
                 : LandRegistry.getPlotsByCity(city);
 
+        if(!LandConfig.canAdmin(source)) {
+            ServerPlayer player=getPlayer(source);if(player==null)return 0;
+            var knowledge=LandDiscoveryData.get(player.server);
+            plots=plots.stream().filter(p->p.getChunks().stream().anyMatch(c->knowledge.known(player.getUUID(),p.getDimension(),c.getX(),c.getZ()))).toList();
+        }
         if (plots.isEmpty()) {
             source.sendFailure(Component.literal(city == null || city.isBlank()
                     ? "Aucune parcelle chargee."

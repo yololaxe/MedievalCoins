@@ -62,6 +62,8 @@ public class LandPlot {
         return Collections.unmodifiableList(chunks);
     }
 
+    public void setName(String name) { this.name = clean(name); }
+
     public void setCity(String city) {
         this.city = clean(city);
     }

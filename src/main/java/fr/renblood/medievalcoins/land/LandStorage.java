@@ -43,6 +43,31 @@ public final class LandStorage {
         return LandRegistry.size();
     }
 
+    public static synchronized com.google.gson.JsonObject webSnapshot() throws IOException {
+        LandFile file = readFileStrict();
+        var result = new com.google.gson.JsonObject();result.addProperty("hash", hash(file.plots));
+        result.add("plots",new Gson().toJsonTree(file.plots));return result;
+    }
+    private static String hash(List<LandPlot> plots) {
+        try{return java.util.HexFormat.of().formatHex(java.security.MessageDigest.getInstance("SHA-256").digest(new Gson().toJson(plots).getBytes(StandardCharsets.UTF_8)));}
+        catch(java.security.NoSuchAlgorithmException impossible){throw new IllegalStateException(impossible);}
+    }
+    public static synchronized com.google.gson.JsonObject applyWeb(com.google.gson.JsonObject command) {
+        var result = new com.google.gson.JsonObject();String id=command.get("id").getAsString();result.addProperty("id",id);
+        try {
+            java.util.UUID.fromString(id);LandFile file=readFileStrict();
+            if(!id.equals(file.lastRemoteCommand)) {
+                if(!hash(file.plots).equals(command.get("baseHash").getAsString())) {
+                    result.addProperty("state","CONFLICT");result.addProperty("message","Le cadastre a changé en jeu. Actualisez puis préparez une nouvelle modification.");return result;
+                }
+                LandWebChanges.apply(file.plots,command.getAsJsonObject("change"));
+                file.lastRemoteCommand=id;writeFile(file);LandRegistry.replaceAll(file.plots);
+            }
+            result.addProperty("state","APPLIED");result.addProperty("message","Modification appliquée par le serveur Minecraft.");
+        }catch(Exception error){result.addProperty("state","REJECTED");String message=error.getMessage();result.addProperty("message",message==null?"Modification refusée.":message.substring(0,Math.min(480,message.length())));}
+        return result;
+    }
+
     public static Path getFile() {
         return FILE;
     }
@@ -108,6 +133,7 @@ public final class LandStorage {
 
     private static class LandFile {
         private int version = 1;
+        private String lastRemoteCommand = "";
         private List<LandPlot> plots = new ArrayList<>();
     }
 }

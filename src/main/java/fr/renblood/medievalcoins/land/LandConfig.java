@@ -70,6 +70,15 @@ public final class LandConfig {
 
     public static class LandConfigData {
         private boolean enableLandSystem = true;
+        private boolean webSyncEnabled = true;
+        private boolean webSyncInSingleplayer = false;
+        private int webSyncIntervalSeconds = 120;
+        private String webWorldKey = "renblood";
+        public boolean isWebSyncEnabled(){return webSyncEnabled;}
+        public boolean isWebSyncInSingleplayer(){return webSyncInSingleplayer;}
+        public int getWebSyncIntervalSeconds(){return webSyncIntervalSeconds;}
+        public String getWebWorldKey(){return webWorldKey;}
+
         private boolean showActionBarOnEnter = true;
         private int adminPermissionLevel = 2;
         private int mapRadiusX = 4;
@@ -96,6 +105,8 @@ public final class LandConfig {
         }
 
         private LandConfigData sanitized() {
+            webSyncIntervalSeconds=Math.max(30,Math.min(3600,webSyncIntervalSeconds));
+            if(webWorldKey==null||!webWorldKey.matches("[a-z0-9_-]{1,64}"))webWorldKey="renblood";
             if (adminPermissionLevel < 0) {
                 adminPermissionLevel = 0;
             } else if (adminPermissionLevel > 4) {

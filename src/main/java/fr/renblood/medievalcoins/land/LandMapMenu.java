@@ -102,6 +102,9 @@ public class LandMapMenu extends AbstractContainerMenu {
     }
 
     private void fillForPlayer(ServerPlayer player) {
+        var knowledge=LandDiscoveryData.get(player.server);
+        knowledge.visit(player.getUUID(),dimension,player.chunkPosition().x,player.chunkPosition().z);
+        boolean admin=LandConfig.canAdmin(player.createCommandSourceStack());
         ChunkPos center = new ChunkPos(centerX,centerZ);
         int radiusX = Math.min(LandConfig.get().getMapRadiusX(), (columns - 1) / 2);
         int radiusZ = Math.min(LandConfig.get().getMapRadiusZ(), (rows - 1) / 2);
@@ -115,7 +118,11 @@ public class LandMapMenu extends AbstractContainerMenu {
                 int chunkZ = minChunkZ + row;
                 boolean currentChunk = chunkX == player.chunkPosition().x && chunkZ == player.chunkPosition().z;
                 Optional<LandPlot> plot = LandRegistry.findAt(player.level().dimension(), chunkX, chunkZ);
-                container.setItem(col + row * columns, createChunkStack(chunkX, chunkZ, center.x, center.z, plot, currentChunk));
+                boolean known=admin||knowledge.known(player.getUUID(),dimension,chunkX,chunkZ);
+                ItemStack stack=createChunkStack(chunkX,chunkZ,center.x,center.z,known?plot:Optional.empty(),currentChunk);
+                stack.getOrCreateTagElement("Land").putBoolean("known",known);
+                if(!known){stack.setHoverName(Component.literal("Territoire inexploré"));stack.getOrCreateTagElement("display").remove("Lore");}
+                container.setItem(col + row * columns,stack);
             }
         }
     }

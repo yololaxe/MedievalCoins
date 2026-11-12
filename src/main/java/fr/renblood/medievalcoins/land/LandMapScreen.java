@@ -60,16 +60,16 @@ public class LandMapScreen extends AbstractContainerScreen<LandMapMenu> {
         g.fill(rx-10,y+64,rx+rw+10,y+h-44,PANEL);
         int cols=menu.getColumns(),rows=menu.getRows(),size=layout.cell(),hover=cellAt(mx,my);
         for(int row=0;row<rows;row++)for(int col=0;col<cols;col++){
-            int index=col+row*cols,cx=layout.mapX()+col*size,cy=layout.mapY()+row*size;var tag=menu.cell(index);String id=tag.getString("id");boolean owned=!id.isBlank();int color=tag.getInt("color");int shade=owned?0xFF000000|(((color>>16&255)*35/100)<<16)|(((color>>8&255)*35/100)<<8)|((color&255)*35/100):0xFF15252D;
-            g.fill(cx,cy,cx+size,cy+size,shade);stroke(g,cx,cy,size,size,0xFF2A3C42);
+            int index=col+row*cols,cx=layout.mapX()+col*size,cy=layout.mapY()+row*size;var tag=menu.cell(index);String id=tag.getString("id");boolean owned=!id.isBlank(),known=tag.getBoolean("known");int color=tag.getInt("color");int shade=owned?0xFF000000|(((color>>16&255)*35/100)<<16)|(((color>>8&255)*35/100)<<8)|((color&255)*35/100):0xFF15252D;
+            g.fill(cx,cy,cx+size,cy+size,known?shade:0xFF0B131B);if(!known)text(g,"?",cx+size/2-2,cy+size/2-4,12,MUTED);stroke(g,cx,cy,size,size,0xFF2A3C42);
             if(owned){int edge=0xFF000000|color;if(col==0||!id.equals(idAt(index-1)))g.fill(cx,cy,cx+2,cy+size,edge);if(col==cols-1||!id.equals(idAt(index+1)))g.fill(cx+size-2,cy,cx+size,cy+size,edge);if(row==0||!id.equals(idAt(index-cols)))g.fill(cx,cy,cx+size,cy+2,edge);if(row==rows-1||!id.equals(idAt(index+cols)))g.fill(cx,cy+size-2,cx+size,cy+size,edge);}
             if(minecraft.player!=null&&tag.contains("x")&&tag.getInt("x")==minecraft.player.chunkPosition().x&&tag.getInt("z")==minecraft.player.chunkPosition().z){int px=cx+size/2,py=cy+size/2;g.fill(px-3,py-3,px+4,py+4,PAPER);g.fill(px-1,py-1,px+2,py+2,INK);}
             if(index==hover)stroke(g,cx+2,cy+2,size-4,size-4,MUTED);if(index==selected)stroke(g,cx+1,cy+1,size-2,size-2,GOLD);
         }
         text(g,"N",layout.mapX()+cols*size/2-3,layout.mapY()-12,10,MUTED);text(g,"S",layout.mapX()+cols*size/2-3,layout.mapY()+rows*size+4,10,MUTED);
-        text(g,"■ Attribué   □ Non attribué   ▪ Vous",x+18,y+h-65,w*3/5-28,MUTED);
-        var tag=selected();boolean ready=tag.contains("x"),owned=!tag.getString("id").isBlank();text(g,!ready?"Chargement…":owned?tag.getString("name"):"Terre non attribuée",rx,y+82,rw,PAPER);
-        text(g,"PROPRIÉTAIRE",rx,y+108,rw,GOLD);text(g,owned?(tag.getString("owner").isBlank()?"Non renseigné":tag.getString("owner")):"Aucun",rx,y+125,rw,PAPER);
+        text(g,"■ Attribué   □ Libre   ? Inexploré   ▪ Vous",x+18,y+h-65,w*3/5-28,MUTED);
+        var tag=selected();boolean ready=tag.contains("x"),owned=!tag.getString("id").isBlank();text(g,!ready?"Chargement…":!tag.getBoolean("known")?"Territoire inexploré":owned?tag.getString("name"):"Terre non attribuée",rx,y+82,rw,PAPER);
+        text(g,tag.getBoolean("known")?"PROPRIÉTAIRE":"À DÉCOUVRIR",rx,y+108,rw,GOLD);text(g,!tag.getBoolean("known")?"Explorez les environs en jeu":owned?(tag.getString("owner").isBlank()?"Non renseigné":tag.getString("owner")):"Aucun",rx,y+125,rw,PAPER);
         text(g,owned?LandMapRules.ownerType(tag.getString("type")):"Domaine sans attribution",rx,y+143,rw,MUTED);text(g,"Ville : "+(tag.getString("city").isBlank()?"—":tag.getString("city")),rx,y+164,rw,MUTED);
         text(g,ready?"Chunk "+tag.getInt("x")+", "+tag.getInt("z"):"",rx,y+182,rw,MUTED);
         if(owned){int line=0;for(var value:font.split(Component.literal(tag.getString("description")),rw)){if(line>=2)break;g.drawString(font,value,rx,y+204+line++*11,MUTED,false);}}
@@ -82,7 +82,7 @@ public class LandMapScreen extends AbstractContainerScreen<LandMapMenu> {
         if(ownerButton!=null)ownerButton.active=ready&&owned&&tag.getString("id").matches("[A-Za-z0-9_.+\\-]+");
         for(var widget:renderables)widget.render(g,mx,my,partial);
         g.pose().popPose();
-        if(hover>=0){var c=menu.cell(hover);if(c.contains("x"))g.renderTooltip(font,java.util.List.of(Component.literal(c.getString("id").isBlank()?"Non attribué":c.getString("name")),Component.literal(c.getString("owner").isBlank()?"Aucun propriétaire indiqué":c.getString("owner"))),Optional.empty(),mouseX,mouseY);}
+        if(hover>=0){var c=menu.cell(hover);if(c.contains("x"))g.renderTooltip(font,java.util.List.of(Component.literal(!c.getBoolean("known")?"Territoire inexploré":c.getString("id").isBlank()?"Non attribué":c.getString("name")),Component.literal(!c.getBoolean("known")?"Visitez ce secteur pour connaître son propriétaire":c.getString("owner").isBlank()?"Aucun propriétaire indiqué":c.getString("owner"))),Optional.empty(),mouseX,mouseY);}
 
     }
 }

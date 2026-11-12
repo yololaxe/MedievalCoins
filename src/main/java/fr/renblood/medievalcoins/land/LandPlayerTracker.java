@@ -29,7 +29,7 @@ public final class LandPlayerTracker {
 
         if(player.tickCount%10!=0)return;
         LandConfig.LandConfigData config = LandConfig.get();
-        if (!config.isEnableLandSystem() || !config.isShowActionBarOnEnter()) {
+        if (!config.isEnableLandSystem()) {
             return;
         }
 
@@ -42,10 +42,12 @@ public final class LandPlayerTracker {
             return;
         }
 
+        LandDiscoveryData.get(player.server).visit(playerId,dimension,chunk.x,chunk.z);
         Optional<LandPlot> currentPlot = LandRegistry.findAt(player.level().dimension(), chunk.x, chunk.z);
         String currentPlotId = currentPlot.map(LandPlot::getId).orElse("");
         LAST_POSITIONS.put(playerId, new PlayerLandPosition(dimension, chunk.x, chunk.z, currentPlotId));
 
+        if(!config.isShowActionBarOnEnter())return;
         if(previous!=null&&currentPlotId.equals(previous.plotId()))return;
         if(currentPlot.isEmpty()){
             if(previous!=null&&!previous.plotId().isBlank())player.displayClientMessage(Component.literal("Territoire non attribué").withStyle(net.minecraft.ChatFormatting.GRAY),true);
