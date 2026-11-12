@@ -15,7 +15,7 @@ public class LandMapScreen extends AbstractContainerScreen<LandMapMenu> {
     private static final int INK=0xFF101D25,PANEL=0xFF172B32,GOLD=0xFFE2BE77,PAPER=0xFFECE5D5,MUTED=0xFFABB8B7;
     private LandMapLayout layout;private int selected;private String query="",target="",filteredQuery;private java.util.List<LandMapMenu.PlotChoice> filteredChoices=java.util.List.of();private EditBox search;private Button choose,assign,release,ownerButton;private LandMapAction pending;
     public LandMapScreen(LandMapMenu menu,Inventory inventory,Component title){super(menu,inventory,title);selected=menu.getColumns()/2+(menu.getRows()/2)*menu.getColumns();inventoryLabelY=10000;}
-    @Override protected void init(){super.init();layout=LandMapLayout.fit(width,height,menu.getColumns(),menu.getRows());clearWidgets();choose=assign=release=null;
+    @Override protected void init(){super.init();layout=LandMapLayout.fit(width,height,menu.getColumns(),menu.getRows());imageWidth=(int)Math.ceil(layout.width()*layout.scale());imageHeight=(int)Math.ceil(layout.height()*layout.scale());leftPos=(int)(layout.x()*layout.scale());topPos=(int)(layout.y()*layout.scale());clearWidgets();choose=assign=release=null;
         int x=layout.x(),y=layout.y(),w=layout.width(),h=layout.height(),rx=layout.infoX(),rw=layout.infoWidth();
         int bx=x+18;String[] labels={"Ouest","Nord","Sud","Est","Ici","Actualiser"};int[][] moves={{-1,0},{0,-1},{0,1},{1,0},{99,0},{0,0}};
         for(int i=0;i<labels.length;i++){final int at=i;int bw=i==5?70:42;flat(labels[i],bx,y+64,bw,()->{pending=null;selected=menu.getColumns()/2+(menu.getRows()/2)*menu.getColumns();send(iAction(at),moves[at][0],moves[at][1],"","");});bx+=bw+4;}
