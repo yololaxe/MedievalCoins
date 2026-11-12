@@ -56,10 +56,16 @@ public class MedievalCoinsAPI {
     public static CompletableFuture<JsonObject> settleNpcCashContract(ServerPlayer player,
             String operationKey, String offer, long amount, net.minecraft.world.item.ItemStack bonus,
             java.util.function.BooleanSupplier valid, Runnable complete) {
+        return settleNpcCashContract(player,operationKey,offer,amount,bonus,valid,complete,null);
+    }
+    public static CompletableFuture<JsonObject> settleNpcCashContract(ServerPlayer player,
+            String operationKey, String offer, long amount, net.minecraft.world.item.ItemStack bonus,
+            java.util.function.BooleanSupplier valid, Runnable complete,JsonObject context) {
         String uuid = player.getStringUUID();
         var key = java.util.UUID.nameUUIDFromBytes(operationKey.getBytes(java.nio.charset.StandardCharsets.UTF_8));
         String version = "commerce-v1:" + amount;
         return fr.renblood.medievalcoins.bank.CommerceService.settleContract(player, key, () -> {
+            if(context!=null)fr.renblood.medievalcoins.bank.NpcCommerceGateway.request(uuid,"npc/contracts/terms",context);
             fr.renblood.medievalcoins.bank.CommerceProtocol.register(uuid, "npc-contracts", null,
                     "Contrats des marchands", "NPC");
             fr.renblood.medievalcoins.bank.CommerceProtocol.offer(uuid, "npc-contracts", offer,
