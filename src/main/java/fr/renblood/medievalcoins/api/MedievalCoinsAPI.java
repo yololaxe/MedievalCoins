@@ -36,6 +36,8 @@ import java.util.concurrent.CompletableFuture;
  * API publique pour permettre aux autres mods d'interagir avec MedievalCoins.
  */
 public class MedievalCoinsAPI {
+    /** Authoritative world-clock rate: a full day lasts 20 * multiplier minutes at 20 TPS. */
+    public static double getDayLengthMultiplier() { return fr.renblood.medievalcoins.events.TimeManager.dayLengthMultiplier; }
     public static void refreshCommerceStatus(ServerPlayer player,String business){fr.renblood.medievalcoins.bank.EconomyFeedback.refresh(player,business);}
 
 

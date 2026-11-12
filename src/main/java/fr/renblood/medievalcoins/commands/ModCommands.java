@@ -150,6 +150,8 @@ public class ModCommands {
 
     private static com.mojang.brigadier.builder.LiteralArgumentBuilder<CommandSourceStack> configCommands() {
         return Commands.literal("config")
+                .executes(c -> showConfigInfo(c.getSource()))
+                .then(Commands.literal("info").executes(c -> showConfigInfo(c.getSource())))
                 .then(Commands.literal("api")
                         .then(Commands.literal("url")
                                 .then(Commands.argument("url", StringArgumentType.greedyString())
@@ -223,6 +225,7 @@ public class ModCommands {
         sendLine(src, "/mc admin job xp <add|set|remove> <metier> <montant> <joueur>", "Gerer l'XP metier.");
         sendLine(src, "/mc admin stats refresh <joueur|all>", "Rafraichir les statistiques.");
         sendLine(src, "/mc admin divine <status|next>", "Gerer la session divine.");
+        sendLine(src, "/mc admin config info", "Voir la durée du cycle, le sommeil et les réglages API.");
         sendLine(src, "/mc admin config ...", "Configurer l'API, le temps et les capacites.");
         sendLine(src, "/mc admin config time sleep-duration <secondes>", "Regler le temps minimum passe au lit.");
         sendLine(src, "/mc admin reload", "Recharger la configuration et les statistiques.");
@@ -419,6 +422,7 @@ public class ModCommands {
 
     private static int setDayLength(CommandSourceStack src, double mult) {
         TimeManager.dayLengthMultiplier = mult;
+        fr.renblood.medievalcoins.events.TimeSettings.capture(src.getServer());
         double totalMinutes = 20.0 * mult;
         src.sendSuccess(() -> Component.translatable("message.medieval_coins.config_daylength", mult, totalMinutes), true);
         return 1;
@@ -426,13 +430,45 @@ public class ModCommands {
 
     private static int setSleepPercentage(CommandSourceStack src, double percent) {
         TimeManager.sleepPercentage = percent / 100.0;
+        fr.renblood.medievalcoins.events.TimeSettings.capture(src.getServer());
         src.sendSuccess(() -> Component.translatable("message.medieval_coins.config_sleep", percent), true);
         return 1;
     }
 
     private static int setSleepDuration(CommandSourceStack src, int seconds) {
         TimeManager.sleepDurationSeconds = seconds;
+        fr.renblood.medievalcoins.events.TimeSettings.capture(src.getServer());
         src.sendSuccess(() -> Component.translatable("message.medieval_coins.config_sleep_duration", seconds), true);
+        return 1;
+    }
+
+    private static int showConfigInfo(CommandSourceStack src) {
+        ModConfig cfg = ModConfig.load();
+        sendHeader(src, "Configuration Medieval Coins");
+        long time = Math.floorMod(src.getServer().overworld().getDayTime(), 24000);
+        int minute = ((int)Math.round(time * 60.0 / 1000) + 360) % 1440;
+        src.sendSuccess(() -> Component.literal(String.format(java.util.Locale.ROOT,
+                "Cycle jour + nuit : %.1f min à 20 TPS · x%.2f · heure : %02d:%02d",
+                20 * TimeManager.dayLengthMultiplier, TimeManager.dayLengthMultiplier, minute / 60, minute % 60))
+                .withStyle(ChatFormatting.GOLD), false);
+        src.sendSuccess(() -> Component.literal("La durée augmente si le serveur ralentit ; le sommeil peut sauter la nuit.")
+                .withStyle(ChatFormatting.GRAY), false);
+        src.sendSuccess(() -> Component.literal("Sommeil : " + Math.round(TimeManager.sleepPercentage * 100)
+                + "% des joueurs pendant " + TimeManager.sleepDurationSeconds + " s · réglages conservés dans ce monde."), false);
+        String endpoint;
+        try { java.net.URI uri = java.net.URI.create(cfg.apiUrl); endpoint = uri.getScheme() + "://" + uri.getHost()
+                + (uri.getPort() < 0 ? "" : ":" + uri.getPort()); }
+        catch (Exception invalid) { endpoint = "adresse invalide"; }
+        final String safeEndpoint = endpoint;
+        src.sendSuccess(() -> Component.literal("API : " + safeEndpoint + " · clé "
+                + (cfg.apiKey == null || cfg.apiKey.isBlank() ? "absente" : "configurée")
+                + " · liaison Minecraft " + (cfg.playerLinkKey == null || cfg.playerLinkKey.isBlank() ? "absente" : "configurée")), false);
+        src.sendSuccess(() -> Component.literal("API : connexion " + cfg.apiConnectTimeoutMs + " ms · lecture "
+                + cfg.apiReadTimeoutMs + " ms · tentatives supplémentaires " + cfg.apiRetryCount), false);
+        src.sendSuccess(() -> Component.literal("Cache API : " + cfg.apiCacheTtlSeconds + " s · synchronisation : "
+                + cfg.apiSyncIntervalSeconds + " s · joueurs en cache : " + PlayerCache.getPlayers().size()
+                + " · debug : " + (MedievalCoin.DEBUG_MODE ? "actif" : "inactif")), false);
+        sendLine(src, "/mc admin config time day-length <facteur>", "Durée du cycle : 20 minutes × facteur.");
         return 1;
     }
 

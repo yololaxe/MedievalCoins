@@ -32,6 +32,20 @@ public class TimeManager {
     private static final Map<UUID, Integer> SLEEP_TICKS = new ConcurrentHashMap<>();
 
     @SubscribeEvent
+    public static void start(net.minecraftforge.event.server.ServerStartedEvent event) {
+        TimeSettings settings = TimeSettings.get(event.getServer());
+        dayLengthMultiplier = settings.multiplier;
+        sleepPercentage = settings.sleepPercentage;
+        sleepDurationSeconds = settings.sleepSeconds;
+        timeAccumulator = 0; lastGameTime = -1; SLEEP_TICKS.clear();
+    }
+
+    @SubscribeEvent
+    public static void stop(net.minecraftforge.event.server.ServerStoppedEvent event) {
+        timeAccumulator = 0; lastGameTime = -1; SLEEP_TICKS.clear();
+    }
+
+    @SubscribeEvent
     public static void onServerTick(TickEvent.ServerTickEvent event) {
         if (event.phase != TickEvent.Phase.END) return;
 
