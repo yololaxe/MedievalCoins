@@ -204,7 +204,7 @@ public final class QuestObjectiveHandler {
                             new NpcQuestAvailabilityMessage(availableSpawnIds));
                 });
             } catch (Exception e) {
-                MedievalCoin.LOGGER.error("Impossible de synchroniser les nouvelles quÃªtes PNJ pour {}",
+                MedievalCoin.LOGGER.error("Impossible de synchroniser les nouvelles quêtes PNJ pour {}",
                         player.getName().getString(), e);
             } finally {
                 AVAILABILITY_IN_FLIGHT.remove(playerUuid);
@@ -488,9 +488,9 @@ public final class QuestObjectiveHandler {
             CompletableFuture<List<NpcSpawnModel>> spawnsFuture = CompletableFuture.supplyAsync(() -> loadOrFallback(
                     () -> ApiClient.getNpcSpawns(null, true), "spawns de PNJ", cachedSpawns));
             CompletableFuture<List<NpcModel>> npcsFuture = CompletableFuture.supplyAsync(() -> loadOrFallback(
-                    ApiClient::getNpcs, "modÃ¨les de PNJ", cachedNpcs));
+                    ApiClient::getNpcs, "modèles de PNJ", cachedNpcs));
             CompletableFuture<List<QuestModel>> questsFuture = CompletableFuture.supplyAsync(() -> loadOrFallback(
-                    () -> ApiClient.getAllQuests(""), "catalogue de quÃªtes", cachedQuests));
+                    () -> ApiClient.getAllQuests(""), "catalogue de quêtes", cachedQuests));
 
             CompletableFuture.allOf(spawnsFuture, npcsFuture, questsFuture).join();
             catalogCache = new CatalogCache(
@@ -630,24 +630,30 @@ public final class QuestObjectiveHandler {
         };
     }
 
+    private static String itemName(String value) {
+        ResourceLocation id = ResourceLocation.tryParse(value);
+        if (id == null || !ForgeRegistries.ITEMS.containsKey(id)) return value + " (objet inconnu)";
+        return new ItemStack(ForgeRegistries.ITEMS.getValue(id)).getHoverName().getString();
+    }
+
     private static String itemObjectiveDescription(QuestModel.Objective objective, String fallback) {
         List<QuestModel.ItemRequirement> requirements = itemRequirements(objective);
         if (requirements.isEmpty()) {
-            return fallback.isBlank() ? "Apporter les objets demandÃ©s" : fallback;
+            return fallback.isBlank() ? "Objectif à configurer : aucun objet demandé n’est renseigné" : fallback;
         }
         String items = requirements.stream()
                 .filter(item -> item != null && item.itemId != null && !item.itemId.isBlank())
-                .map(item -> requiredCount(item) + " x " + item.itemId)
+                .map(item -> requiredCount(item) + " × " + itemName(item.itemId))
                 .collect(Collectors.joining(", "));
-        return items.isBlank() ? (fallback.isBlank() ? "Apporter les objets demandÃ©s" : fallback) : "Apporter : " + items;
+        return items.isBlank() ? (fallback.isBlank() ? "Objectif à configurer : aucun objet demandé n’est renseigné" : fallback) : "Apporter : " + items;
     }
 
     private static String locationObjectiveDescription(QuestModel.Objective objective, String fallback) {
         if (objective.coord == null || objective.coord.isBlank()) {
-            return fallback.isBlank() ? "Atteindre le lieu indiquÃ©" : fallback;
+            return fallback.isBlank() ? "Atteindre le lieu indiqué" : fallback;
         }
         String coordinates = objective.coord.replace(" r:", " (rayon : ");
-        return "Se rendre Ã  " + coordinates + (objective.coord.contains(" r:") ? " blocs)" : "");
+        return "Se rendre à " + coordinates + (objective.coord.contains(" r:") ? " blocs)" : "");
     }
 
     private static String localized(Map<String, String> text) {
@@ -733,28 +739,7 @@ public final class QuestObjectiveHandler {
 
     private static List<QuestModel.ItemRequirement> itemRequirements(QuestModel.Objective objective) {
         if (objective == null) return List.of();
-        if (objective.items != null && !objective.items.isEmpty()) {
-            return objective.items.stream()
-                    .filter(requirement -> requirement != null
-                            && requirement.itemId != null
-                            && !requirement.itemId.isBlank())
-                    .toList();
-        }
-        String itemId = null;
-        int count = Math.max(1, objective.count);
-        if (objective.target != null && objective.target.isJsonPrimitive()) {
-            itemId = objective.target.getAsString();
-        } else if (objective.target != null && objective.target.isJsonObject()) {
-            com.google.gson.JsonObject target = objective.target.getAsJsonObject();
-            itemId = firstPrimitive(target, "itemId", "item_id", "item", "id");
-            Integer targetCount = firstInteger(target, "count", "amount", "quantity");
-            if (targetCount != null) count = Math.max(1, targetCount);
-        }
-        if (itemId == null || itemId.isBlank()) return List.of();
-        QuestModel.ItemRequirement requirement = new QuestModel.ItemRequirement();
-        requirement.itemId = itemId;
-        requirement.count = count;
-        return List.of(requirement);
+        return objective.getItemRequirements().stream().filter(row -> row != null && row.itemId != null && !row.itemId.isBlank()).toList();
     }
 
     private static String firstPrimitive(com.google.gson.JsonObject object, String... keys) {

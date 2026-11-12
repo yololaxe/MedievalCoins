@@ -110,6 +110,9 @@ public final class ApiHttpClient {
                     ? connection.getInputStream()
                     : connection.getErrorStream());
             if (code < 200 || code >= 300) {
+                if (code == 404 && new URL(endpoint).getPath().startsWith("/players/getByMinecraft/")) {
+                    throw new ApiException("Aucun personnage du site n’est associé à cet UUID Minecraft. Associe ton compte Minecraft à ton personnage sur le site du même environnement.");
+                }
                 String message = "HTTP " + code + " sur " + endpoint + " : " + summarize(response);
                 if (code == 429 || code >= 500) throw new TemporaryApiException(message);
                 throw new ApiException(message);
@@ -169,6 +172,16 @@ public final class ApiHttpClient {
 
     private static String summarize(String response) {
         if (response == null || response.isBlank()) return "aucun detail";
+        try {
+            var json = com.google.gson.JsonParser.parseString(response);
+            if (json.isJsonObject()) for (String key : java.util.List.of("message", "error", "detail")) {
+                var value = json.getAsJsonObject().get(key);
+                if (value != null && value.isJsonPrimitive()) {
+                    String decoded = value.getAsString();
+                    return decoded.length() <= 240 ? decoded : decoded.substring(0, 240) + "…";
+                }
+            }
+        } catch (RuntimeException notJson) { /* Keep the bounded HTML/text fallback. */ }
         String summary = response.replaceAll("<[^>]+>", " ").replaceAll("\\s+", " ").trim();
         return summary.length() <= 240 ? summary : summary.substring(0, 240) + "...";
     }

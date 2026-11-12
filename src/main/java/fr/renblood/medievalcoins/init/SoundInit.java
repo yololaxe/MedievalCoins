@@ -14,6 +14,8 @@ public final class SoundInit {
     public static final RegistryObject<SoundEvent> PIPPIN = REGISTRY.register("pippin",
             () -> SoundEvent.createVariableRangeEvent(new ResourceLocation(MedievalCoin.MODID, "pippin")));
 
+    static { fr.renblood.medievalcoins.music.MusicCatalog.register(REGISTRY); }
+
     private SoundInit() {
     }
 }

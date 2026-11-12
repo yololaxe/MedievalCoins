@@ -6,5 +6,125 @@
         "stream": true
       }
     ]
+  },
+  "music.renblood_01": {
+    "sounds": [
+      {
+        "name": "medieval_coins:music/renblood_01",
+        "stream": true
+      }
+    ]
+  },
+  "music.renblood_02": {
+    "sounds": [
+      {
+        "name": "medieval_coins:music/renblood_02",
+        "stream": true
+      }
+    ]
+  },
+  "music.renblood_03": {
+    "sounds": [
+      {
+        "name": "medieval_coins:music/renblood_03",
+        "stream": true
+      }
+    ]
+  },
+  "music.renblood_04": {
+    "sounds": [
+      {
+        "name": "medieval_coins:music/renblood_04",
+        "stream": true
+      }
+    ]
+  },
+  "music.renblood_05": {
+    "sounds": [
+      {
+        "name": "medieval_coins:music/renblood_05",
+        "stream": true
+      }
+    ]
+  },
+  "music.renblood_06": {
+    "sounds": [
+      {
+        "name": "medieval_coins:music/renblood_06",
+        "stream": true
+      }
+    ]
+  },
+  "music.renblood_07": {
+    "sounds": [
+      {
+        "name": "medieval_coins:music/renblood_07",
+        "stream": true
+      }
+    ]
+  },
+  "music.renblood_08": {
+    "sounds": [
+      {
+        "name": "medieval_coins:music/renblood_08",
+        "stream": true
+      }
+    ]
+  },
+  "music.renblood_09": {
+    "sounds": [
+      {
+        "name": "medieval_coins:music/renblood_09",
+        "stream": true
+      }
+    ]
+  },
+  "music.renblood_10": {
+    "sounds": [
+      {
+        "name": "medieval_coins:music/renblood_10",
+        "stream": true
+      }
+    ]
+  },
+  "music.renblood_11": {
+    "sounds": [
+      {
+        "name": "medieval_coins:music/renblood_11",
+        "stream": true
+      }
+    ]
+  },
+  "music.renblood_12": {
+    "sounds": [
+      {
+        "name": "medieval_coins:music/renblood_12",
+        "stream": true
+      }
+    ]
+  },
+  "music.renblood_13": {
+    "sounds": [
+      {
+        "name": "medieval_coins:music/renblood_13",
+        "stream": true
+      }
+    ]
+  },
+  "music.renblood_14": {
+    "sounds": [
+      {
+        "name": "medieval_coins:music/renblood_14",
+        "stream": true
+      }
+    ]
+  },
+  "music.renblood_15": {
+    "sounds": [
+      {
+        "name": "medieval_coins:music/renblood_15",
+        "stream": true
+      }
+    ]
   }
 }

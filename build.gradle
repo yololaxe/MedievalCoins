@@ -84,6 +84,7 @@ minecraft {
         }
 
         gameTestServer {
+            workingDirectory project.file('run-quest-tests')
             property 'forge.enabledGameTestNamespaces', mod_id
         }
 

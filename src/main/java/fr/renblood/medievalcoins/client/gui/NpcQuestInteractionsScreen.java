@@ -87,9 +87,10 @@ public class NpcQuestInteractionsScreen extends Screen {
             addRenderableWidget(Button.builder(Component.literal("Commencer la quête"), button -> send("START"))
                     .bounds(width - 252, height - 32, 114, 20).build());
         } else if ("IN_PROGRESS".equals(status) && "COMPLETE".equalsIgnoreCase(selected.npcAction())) {
-            Button complete = Button.builder(Component.literal("Restituer la quête"), button -> send("COMPLETE"))
+            Button complete = Button.builder(Component.literal(selected.canComplete() ? "Restituer la quête" : "Vérifier et remettre"), button -> send("COMPLETE"))
                     .bounds(width - 252, height - 32, 114, 20).build();
-            complete.active = selected.canComplete();
+            // The server validates current inventory on click; a stale preview must not block delivery.
+            complete.active = true;
             addRenderableWidget(complete);
         }
 

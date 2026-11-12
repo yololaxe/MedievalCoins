@@ -48,7 +48,7 @@ import static fr.renblood.medievalcoins.init.EntityInit.ENTITY_TYPES;
 public class MedievalCoin {
     public static final String MODID = "medieval_coins";
     public static final Logger LOGGER = LogManager.getLogger();
-    private static final String PROTOCOL_VERSION = "5";
+    private static final String PROTOCOL_VERSION = "6";
     
     // Variable globale de debug
     public static boolean DEBUG_MODE = true;
@@ -87,6 +87,7 @@ public class MedievalCoin {
     }
 
     private void registerNetworkMessages() {
+        PACKET_HANDLER.registerMessage(messageID++,fr.renblood.medievalcoins.network.MusicControlMessage.class,fr.renblood.medievalcoins.network.MusicControlMessage::encode,fr.renblood.medievalcoins.network.MusicControlMessage::decode,fr.renblood.medievalcoins.network.MusicControlMessage::handle,Optional.of(NetworkDirection.PLAY_TO_CLIENT));
         PACKET_HANDLER.registerMessage(messageID++,EconomyFeedbackMessage.class,EconomyFeedbackMessage::encode,EconomyFeedbackMessage::decode,EconomyFeedbackMessage::handle,Optional.of(NetworkDirection.PLAY_TO_CLIENT));
         PACKET_HANDLER.registerMessage(messageID++,EconomyStatusRequestMessage.class,EconomyStatusRequestMessage::encode,EconomyStatusRequestMessage::decode,EconomyStatusRequestMessage::handle,Optional.of(NetworkDirection.PLAY_TO_SERVER));
         // 1) Refresh GUI banquier

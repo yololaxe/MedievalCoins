@@ -447,8 +447,8 @@ public class QuestScreen extends Screen {
             y = drawBulletLine(gg, fontRenderer, prefix + objDesc, x, y, width, color);
         }
 
-        if ("ITEM".equals(obj.type) && obj.items != null) {
-            for (QuestModel.ItemRequirement req : obj.items) {
+        if ("ITEM".equalsIgnoreCase(obj.type) && !obj.getItemRequirements().isEmpty()) {
+            for (QuestModel.ItemRequirement req : obj.getItemRequirements()) {
                 y = drawBulletLine(gg, fontRenderer, prefix + "Ramener " + req.count + "x " + resolveItemName(req.itemId), x, y, width, color);
             }
             return y;

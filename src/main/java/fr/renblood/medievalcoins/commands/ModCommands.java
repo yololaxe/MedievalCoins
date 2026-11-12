@@ -57,6 +57,7 @@ public class ModCommands {
                 .then(Commands.literal("help").executes(c -> showPlayerHelp(c.getSource())))
                 .then(Commands.literal("status").executes(c -> showPlayerStatus(c.getSource())))
                 .then(Commands.literal("land").redirect(dispatcher.getRoot().getChild("land")))
+                .then(fr.renblood.medievalcoins.music.MusicCommands.command())
                 .then(tutoCommands())
                 .then(PlayerLinkCommand.command())
                 .then(Commands.literal("ability")
