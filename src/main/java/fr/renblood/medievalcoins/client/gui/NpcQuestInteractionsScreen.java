@@ -50,6 +50,8 @@ public class NpcQuestInteractionsScreen extends Screen {
         this.selected = this.quests.isEmpty() ? null : this.quests.get(0);
     }
 
+    public boolean acceptsUpdate(String id){return java.util.Objects.equals(npcId,id);}
+    private boolean offersTutorial(){return fr.renblood.medievalcoins.tutorial.TutorialRules.isNagaki(npcId,npcName);}
     @Override
     protected void init() {
         int panelLeft = 14;
@@ -62,6 +64,12 @@ public class NpcQuestInteractionsScreen extends Screen {
                 .bounds(width - 94, 14, 78, 20)
                 .build());
 
+        if(offersTutorial()){
+            addRenderableWidget(Button.builder(Component.literal("Tutoriel de Nagaki"),button->{
+                if(minecraft.player!=null){minecraft.setScreen(null);minecraft.player.connection.sendCommand("mc tuto start");}
+            }).bounds(panelLeft+8,y,listWidth-16,20).tooltip(net.minecraft.client.gui.components.Tooltip.create(Component.literal("Commencer ou reprendre le tutoriel, sans effacer ta progression."))).build());
+            y+=24;
+        }
         int visibleEntries = Math.max(1, (maxY - y) / 24);
         int end = Math.min(quests.size(), listScroll + visibleEntries);
         for (int index = listScroll; index < end; index++) {
@@ -153,7 +161,7 @@ public class NpcQuestInteractionsScreen extends Screen {
 
         if (selected == null) {
             drawWrapped(graphics, quests.isEmpty()
-                            ? "Aucune quête n'est actuellement assignée à ce personnage."
+                            ? offersTutorial()?"Nagaki t’accompagne dans tes premiers pas. Choisis Tutoriel de Nagaki pour commencer ou reprendre. La première étape consiste à ouvrir la banque, sans dépenser d’argent.":"Aucune quête n'est actuellement assignée à ce personnage."
                             : "Sélectionnez une quête pour afficher ses informations.",
                     detailLeft + 12, top + 38, detailRight - detailLeft - 24, MUTED);
         } else {
@@ -277,7 +285,7 @@ public class NpcQuestInteractionsScreen extends Screen {
         int panelTop = 42;
         int listWidth = listWidth();
         if (mouseX >= panelLeft && mouseX <= panelLeft + listWidth) {
-            int visibleEntries = Math.max(1, (height - panelTop - 66) / 24);
+            int visibleEntries = Math.max(1, (height - panelTop - 66 - (offersTutorial()?24:0)) / 24);
             int maxListScroll = Math.max(0, quests.size() - visibleEntries);
             int next = Math.max(0, Math.min(maxListScroll, listScroll - (int) delta));
             if (next != listScroll) {

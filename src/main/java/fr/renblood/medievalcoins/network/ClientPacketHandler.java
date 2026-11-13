@@ -47,6 +47,7 @@ public class ClientPacketHandler {
     }
 
     public static void handleOpenNpcQuestInteractions(OpenNpcQuestInteractionsMessage msg) {
+        if(msg.updateOnly()&&(!(Minecraft.getInstance().screen instanceof NpcQuestInteractionsScreen screen)||!screen.acceptsUpdate(msg.npcId())))return;
         Minecraft.getInstance().setScreen(new NpcQuestInteractionsScreen(msg.npcId(), msg.npcName(), msg.texture(), msg.quests()));
     }
 

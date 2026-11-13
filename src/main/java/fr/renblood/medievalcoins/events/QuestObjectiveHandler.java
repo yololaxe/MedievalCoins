@@ -126,6 +126,8 @@ public final class QuestObjectiveHandler {
 
     private static void openNpcInteractionsAsync(
             ServerPlayer player, String npcId, String npcName, String texture, boolean notifyPlayer) {
+        boolean tutorial=fr.renblood.medievalcoins.tutorial.TutorialRules.isNagaki(npcId,npcName);
+        if(tutorial&&!notifyPlayer)MedievalCoin.PACKET_HANDLER.send(PacketDistributor.PLAYER.with(()->player),new OpenNpcQuestInteractionsMessage(npcId,npcName,texture,List.of()));
         UUID playerUuid = player.getUUID();
         long requestStartedAt = System.currentTimeMillis();
         Long previousRequest = NPC_INTERACTIONS_IN_FLIGHT.putIfAbsent(playerUuid, requestStartedAt);
@@ -146,7 +148,7 @@ public final class QuestObjectiveHandler {
                 player.getServer().execute(() -> {
                     if (player.isRemoved() || player.hasDisconnected()) return;
                     MedievalCoin.PACKET_HANDLER.send(PacketDistributor.PLAYER.with(() -> player),
-                            new OpenNpcQuestInteractionsMessage(npcId, npcName, texture, quests));
+                            new OpenNpcQuestInteractionsMessage(npcId, npcName, texture, quests,tutorial));
                     if (notifyPlayer) {
                         player.sendSystemMessage(Component.literal("Quetes du PNJ actualisees.")
                                 .withStyle(ChatFormatting.GREEN));

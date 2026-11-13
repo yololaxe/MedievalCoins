@@ -48,7 +48,7 @@ import static fr.renblood.medievalcoins.init.EntityInit.ENTITY_TYPES;
 public class MedievalCoin {
     public static final String MODID = "medieval_coins";
     public static final Logger LOGGER = LogManager.getLogger();
-    private static final String PROTOCOL_VERSION = "7";
+    private static final String PROTOCOL_VERSION = "8";
     
     // Variable globale de debug
     public static boolean DEBUG_MODE = true;

@@ -78,7 +78,7 @@ public final class TutorialManager {
     private static long ticks;
 
     private static final Step[] STEPS = {
-            new Step("Les premieres pieces", "Avant les grandes histoires, Nagaki t'envoie voir la banque. Prends le temps d'ouvrir le comptoir et de regarder comment ton argent est range.", Objective.BANK),
+            new Step("Les premieres pieces", "Nagaki te propose de découvrir la banque. Parle au banquier et ouvre le menu de la banque. Aucun dépôt, retrait ou solde minimum n’est nécessaire.", Objective.BANK),
             new Step("Un etal a toi", "Nagaki te confie un comptoir de test. Pose-le pres de toi, comme si tu preparais ton premier petit marche.", Objective.MERCHANT_PLACE),
             new Step("Mettre un prix", "Ouvre ton comptoir avec Maj + clic droit. Dans Stock, sélectionne une pile et clique sur Envoyer. Dans Prix, règle son tarif puis applique.", Objective.MERCHANT_CONFIGURE),
             new Step("Ranger apres l'essai", "Un comptoir de test ne doit pas rester dans le monde. Casse-le, puis confirme la suppression quand Nagaki te le demande.", Objective.MERCHANT_REMOVE),
@@ -159,6 +159,21 @@ public final class TutorialManager {
         }
         advance(player, session, "Etape passee par un admin.");
         return 1;
+    }
+
+    @SubscribeEvent
+    public static void onBankOpened(net.minecraftforge.event.entity.player.PlayerContainerEvent.Open event) {
+        if(event.getEntity() instanceof ServerPlayer player
+                && event.getContainer() instanceof fr.renblood.medievalcoins.inventory.banker.BankerGuiMenu)
+            recordBankOpened(player);
+    }
+
+    public static void recordBankOpened(ServerPlayer player) {
+        Session session=ACTIVE.get(player.getUUID());
+        if(session!=null&&currentObjective(session)==Objective.BANK){
+            session.bankWithdrawDone=true;
+            advance(player,session,"Banque découverte : menu ouvert.");
+        }
     }
 
     public static void recordBankWithdraw(ServerPlayer player) {
@@ -280,23 +295,22 @@ public final class TutorialManager {
         if (ticks % 200 == 0) refreshNpcSpawns();
 
         MinecraftServer server = event.getServer();
-        ACTIVE.entrySet().removeIf(entry -> {
+        for(var entry : List.copyOf(ACTIVE.entrySet())) {
             ServerPlayer player = server.getPlayerList().getPlayer(entry.getKey());
-            if (player == null) return true;
+            if (player == null) {ACTIVE.remove(entry.getKey());continue;}
             Session session = entry.getValue();
             drainNarration(player, session);
             skipUnavailableNpcSteps(player, session);
             if (isCurrentObjectiveComplete(player, session)) {
                 advance(player, session, "Objectif valide.");
-                return false;
+                continue;
             }
             if (session.guideEnabled && ticks - session.lastGuideTick >= GUIDE_INTERVAL_TICKS) {
                 session.lastGuideTick = ticks;
                 sendGuide(player, session, true);
                 emitGuideArrow(player, session);
             }
-            return false;
-        });
+        }
     }
 
     private static void advance(ServerPlayer player, Session session, String reason) {
@@ -454,6 +468,8 @@ public final class TutorialManager {
     }
 
     private static String resolveNpcId(Entity entity) {
+        String directId=entity.getPersistentData().getString("ApiNpcId");
+        if(!directId.isBlank())return directId;
         String spawnId = entity.getPersistentData().getString(NPC_SPAWN_ID_TAG);
         if (spawnId == null || spawnId.isBlank()) return null;
         for (NpcSpawnModel spawn : npcSpawns) {

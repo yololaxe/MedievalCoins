@@ -11,7 +11,8 @@ import net.minecraftforge.network.NetworkEvent;
 import java.util.List;
 import java.util.function.Supplier;
 
-public record OpenNpcQuestInteractionsMessage(String npcId, String npcName, String texture, List<NpcQuestInteractionModel> quests) {
+public record OpenNpcQuestInteractionsMessage(String npcId, String npcName, String texture, List<NpcQuestInteractionModel> quests, boolean updateOnly) {
+    public OpenNpcQuestInteractionsMessage(String id,String name,String texture,List<NpcQuestInteractionModel> quests){this(id,name,texture,quests,false);}
     private static final Gson GSON = new Gson();
 
     public static void encode(OpenNpcQuestInteractionsMessage message, FriendlyByteBuf buffer) {
@@ -19,11 +20,12 @@ public record OpenNpcQuestInteractionsMessage(String npcId, String npcName, Stri
         buffer.writeUtf(message.npcName);
         buffer.writeUtf(message.texture);
         buffer.writeUtf(GSON.toJson(message.quests));
+        buffer.writeBoolean(message.updateOnly);
     }
 
     public static OpenNpcQuestInteractionsMessage decode(FriendlyByteBuf buffer) {
         return new OpenNpcQuestInteractionsMessage(buffer.readUtf(), buffer.readUtf(), buffer.readUtf(),
-                GSON.fromJson(buffer.readUtf(32767), new TypeToken<List<NpcQuestInteractionModel>>() {}.getType()));
+                GSON.fromJson(buffer.readUtf(32767), new TypeToken<List<NpcQuestInteractionModel>>() {}.getType()), buffer.readBoolean());
     }
 
     public static void handle(OpenNpcQuestInteractionsMessage message, Supplier<NetworkEvent.Context> contextSupplier) {
