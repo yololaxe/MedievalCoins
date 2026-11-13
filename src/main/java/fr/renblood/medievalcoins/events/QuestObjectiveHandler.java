@@ -60,6 +60,14 @@ public final class QuestObjectiveHandler {
     private static final java.util.concurrent.Executor API_EXECUTOR =
             fr.renblood.medievalcoins.network.ApiExecutor.executor();
     private static volatile CatalogCache catalogCache;
+    private static final Map<ServerPlayer,fr.renblood.medievalcoins.network.QuestJournalRequestMessage> JOURNAL_REQUESTS=new ConcurrentHashMap<>();
+    private static final Set<ServerPlayer> JOURNAL_IN_FLIGHT=ConcurrentHashMap.newKeySet();
+    private static final Map<UUID,Long> JOURNAL_FORCE_AT=new ConcurrentHashMap<>();
+
+    @SubscribeEvent
+    public static void onJournalLogout(net.minecraftforge.event.entity.player.PlayerEvent.PlayerLoggedOutEvent event){
+        if(event.getEntity() instanceof ServerPlayer player){JOURNAL_REQUESTS.remove(player);JOURNAL_IN_FLIGHT.remove(player);JOURNAL_FORCE_AT.remove(player.getUUID());}
+    }
 
     private QuestObjectiveHandler() {
     }
@@ -147,6 +155,7 @@ public final class QuestObjectiveHandler {
                 List<NpcQuestInteractionModel> quests = getNpcInteractions(player, npcId);
                 player.getServer().execute(() -> {
                     if (player.isRemoved() || player.hasDisconnected()) return;
+                    for(var offered:quests)if("AVAILABLE".equalsIgnoreCase(offered.status()))fr.renblood.medievalcoins.quest.QuestDiscovery.discover(player.getPersistentData(),offered.questId());
                     MedievalCoin.PACKET_HANDLER.send(PacketDistributor.PLAYER.with(() -> player),
                             new OpenNpcQuestInteractionsMessage(npcId, npcName, texture, quests,tutorial));
                     if (notifyPlayer) {
@@ -165,6 +174,50 @@ public final class QuestObjectiveHandler {
                 NPC_INTERACTIONS_IN_FLIGHT.remove(playerUuid, requestStartedAt);
             }
         });
+    }
+
+    /** Network requests are coalesced per player; only filtered definitions leave the server. */
+    public static void sendJournalAsync(ServerPlayer player,fr.renblood.medievalcoins.network.QuestJournalRequestMessage request){
+        if(!List.of("Main","Secondary","Tertiary","FullRP","SemiRP","Completed").contains(request.category()))return;
+        UUID id=player.getUUID();JOURNAL_REQUESTS.put(player,request);
+        if(!JOURNAL_IN_FLIGHT.add(player))return;
+        long now=System.currentTimeMillis();boolean force=request.refresh()&&now-JOURNAL_FORCE_AT.getOrDefault(id,0L)>5000;
+        if(force)JOURNAL_FORCE_AT.put(id,now);
+        try{API_EXECUTOR.execute(()->{
+            try{
+                if(force){
+                    PlayerModel profile=ApiClient.getPlayer(id.toString());
+                    if(profile!=null&&profile.id!=null)fr.renblood.medievalcoins.network.ApiCache.invalidatePrefix("player-quests:"+profile.id);
+                    fr.renblood.medievalcoins.network.ApiCache.invalidatePrefix("quests:");
+                    invalidateNpcQuestCaches(id);
+                }
+                List<PlayerQuestStateModel> states=getPlayerQuestsCached(player);
+                List<QuestModel> catalogue=ApiClient.getAllQuests("");
+                player.getServer().execute(()->{
+                    var latest=JOURNAL_REQUESTS.remove(player);
+                    try{
+                        if(latest==null||player.isRemoved()||player.hasDisconnected())return;
+                        var visible=fr.renblood.medievalcoins.quest.QuestJournalRules.select(catalogue==null?List.of():catalogue,states,fr.renblood.medievalcoins.quest.QuestDiscovery.read(player.getPersistentData()),latest.category());
+                        List<fr.renblood.medievalcoins.network.QuestJournalSnapshotMessage.Entry> entries=new ArrayList<>();
+                        for(var item:visible){
+                            List<Integer> done=new ArrayList<>();CompoundTag progress=getQuestProgress(player,item.quest().questId);
+                            if(item.quest().objectives!=null)for(int i=0;i<item.quest().objectives.size();i++)if(progress.getBoolean(Integer.toString(i)))done.add(i);
+                            entries.add(new fr.renblood.medievalcoins.network.QuestJournalSnapshotMessage.Entry(item.quest(),item.status(),done));
+                        }
+                        MedievalCoin.PACKET_HANDLER.send(PacketDistributor.PLAYER.with(()->player),new fr.renblood.medievalcoins.network.QuestJournalSnapshotMessage(latest.requestId(),latest.category(),"",entries));
+                    }finally{JOURNAL_IN_FLIGHT.remove(player);}
+                });
+            }catch(Exception failure){
+                MedievalCoin.LOGGER.warn("Journal personnel indisponible pour {}",player.getName().getString(),failure);
+                player.getServer().execute(()->{
+                    var latest=JOURNAL_REQUESTS.remove(player);JOURNAL_IN_FLIGHT.remove(player);
+                    if(latest!=null&&!player.hasDisconnected())MedievalCoin.PACKET_HANDLER.send(PacketDistributor.PLAYER.with(()->player),new fr.renblood.medievalcoins.network.QuestJournalSnapshotMessage(latest.requestId(),latest.category(),"Journal indisponible. Réessaie dans quelques instants.",List.of()));
+                });
+            }
+        });}catch(RuntimeException busy){
+            JOURNAL_REQUESTS.remove(player);JOURNAL_IN_FLIGHT.remove(player);
+            MedievalCoin.PACKET_HANDLER.send(PacketDistributor.PLAYER.with(()->player),new fr.renblood.medievalcoins.network.QuestJournalSnapshotMessage(request.requestId(),request.category(),"Le journal est occupé. Réessaie dans quelques instants.",List.of()));
+        }
     }
 
     public static void executeApiTask(Runnable task) {
@@ -396,7 +449,7 @@ public final class QuestObjectiveHandler {
             return allQuests.stream()
                     .filter(quest -> quest != null && interactionAction(quest,
                             statuses.getOrDefault(normalizeId(quest.questId), "AVAILABLE"), finalNpcId, npcId) != null)
-                    .filter(quest -> statuses.containsKey(normalizeId(quest.questId))
+                    .filter(quest -> "IN_PROGRESS".equalsIgnoreCase(statuses.get(normalizeId(quest.questId)))
                             || prerequisitesMetNormalized(quest, completedIds))
                     .map(quest -> toInteraction(player, quest,
                             statuses.getOrDefault(normalizeId(quest.questId), "AVAILABLE"),

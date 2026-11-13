@@ -1,9 +1,7 @@
 package fr.renblood.medievalcoins.client.gui;
 
 import fr.renblood.medievalcoins.api.model.PlayerQuestStateModel;
-import fr.renblood.medievalcoins.api.model.PlayerModel;
 import fr.renblood.medievalcoins.api.model.QuestModel;
-import fr.renblood.medievalcoins.network.ApiClient;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
@@ -57,7 +55,8 @@ public class QuestScreen extends Screen {
     private int detailContentHeight;
     private String statusMessage = "Cliquez sur le bouton de mise a jour pour recuperer les quetes.";
 
-    private static final Map<String, List<PlayerQuestStateModel>> QUEST_CACHE = new ConcurrentHashMap<>();
+    private int journalRequestId;
+    private static final java.util.concurrent.atomic.AtomicInteger REQUEST_IDS=new java.util.concurrent.atomic.AtomicInteger();
     private static final Map<String, Set<Integer>> OBJECTIVE_PROGRESS = new ConcurrentHashMap<>();
 
     public static void updateObjectiveProgress(Map<String, List<Integer>> progress) {
@@ -136,12 +135,6 @@ public class QuestScreen extends Screen {
         updateFinishButtonState();
         if (this.list != null) this.list.clear();
 
-        List<PlayerQuestStateModel> cached = QUEST_CACHE.get(category);
-        if (cached != null) {
-            populateList(cached);
-            return;
-        }
-
         refreshCurrentCategory();
     }
 
@@ -150,112 +143,21 @@ public class QuestScreen extends Screen {
     }
 
     private void refreshCurrentCategory(boolean clearList) {
-        if (refreshing) return;
-
-        String category = currentCategory;
-        refreshing = true;
-        statusMessage = "Mise a jour des quetes...";
-        updateRefreshButtonState();
-        if (clearList && this.list != null) this.list.clear();
-
-        fr.renblood.medievalcoins.network.ApiExecutor.execute(() -> {
-            Minecraft mc = Minecraft.getInstance();
-            try {
-                if (mc.player == null) {
-                    mc.execute(() -> finishRefresh(category, null, "Joueur introuvable."));
-                    return;
-                }
-
-                String uuid = mc.player.getGameProfile().getId().toString();
-                List<PlayerQuestStateModel> quests;
-                if ("Completed".equals(category)) {
-                    PlayerModel profile = ApiClient.getPlayer(uuid);
-                    String playerId = profile != null && profile.id != null ? profile.id : uuid;
-                    quests = ApiClient.getPlayerQuests(playerId);
-                    if (quests == null) quests = new ArrayList<>();
-                    quests.removeIf(state -> state == null || !"COMPLETED".equalsIgnoreCase(state.status));
-                    attachQuestDetails(quests, "");
-                } else {
-                    quests = ApiClient.getActiveQuests(uuid, category);
-                }
-                if (quests == null) quests = new ArrayList<>();
-
-                if (quests.isEmpty() && !"Completed".equals(category)) {
-                    quests = buildStatesFromAllQuests(category);
-                } else if (!"Completed".equals(category)) {
-                    attachQuestDetails(quests, category);
-                }
-
-                List<PlayerQuestStateModel> loadedQuests = quests;
-                QUEST_CACHE.put(category, loadedQuests);
-                mc.execute(() -> finishRefresh(category, loadedQuests, null));
-            } catch (Exception e) {
-                e.printStackTrace();
-                String message = e.getMessage() == null ? e.getClass().getSimpleName() : e.getMessage();
-                mc.execute(() -> finishRefresh(category, null, "Erreur API: " + message));
-            }
-        });
+        refreshing=true;statusMessage="Mise à jour du journal personnel…";updateRefreshButtonState();
+        if(clearList&&list!=null)list.clear();
+        fr.renblood.medievalcoins.MedievalCoin.PACKET_HANDLER.sendToServer(new fr.renblood.medievalcoins.network.QuestJournalRequestMessage(journalRequestId=REQUEST_IDS.incrementAndGet(),currentCategory,clearList));
     }
 
-    private void finishRefresh(String category, List<PlayerQuestStateModel> quests, String error) {
-        refreshing = false;
-        updateRefreshButtonState();
-        if (!category.equals(currentCategory)) return;
-
-        if (error != null) {
-            showStatus(error);
-        } else {
-            populateList(quests);
+    public void acceptJournal(fr.renblood.medievalcoins.network.QuestJournalSnapshotMessage snapshot){
+        if(snapshot.requestId()!=journalRequestId||!currentCategory.equals(snapshot.category()))return;
+        refreshing=false;updateRefreshButtonState();
+        if(snapshot.error()!=null&&!snapshot.error().isBlank()){showStatus(snapshot.error());return;}
+        List<PlayerQuestStateModel> entries=new ArrayList<>();
+        for(var entry:snapshot.entries()){
+            PlayerQuestStateModel state=new PlayerQuestStateModel();state.quest_id=entry.quest().questId;state.status=entry.status();state.questDetails=entry.quest();entries.add(state);
+            OBJECTIVE_PROGRESS.put(state.quest_id,new HashSet<>(entry.completedObjectives()));
         }
-    }
-
-    private void attachQuestDetails(List<PlayerQuestStateModel> quests, String category) {
-        Map<String, QuestModel> allQuests = new HashMap<>();
-        try {
-            allQuests = indexAllQuests(category);
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-
-        for (PlayerQuestStateModel pq : quests) {
-            if (pq == null || pq.quest_id == null || pq.quest_id.isEmpty()) continue;
-            pq.questDetails = allQuests.get(pq.quest_id);
-            if (pq.questDetails != null) continue;
-            try {
-                pq.questDetails = ApiClient.getQuestDetails(pq.quest_id);
-            } catch (Exception e) {
-                e.printStackTrace();
-            }
-        }
-    }
-
-    private List<PlayerQuestStateModel> buildStatesFromAllQuests(String category) throws Exception {
-        List<PlayerQuestStateModel> states = new ArrayList<>();
-        List<QuestModel> allQuests = ApiClient.getAllQuests(category);
-        if (allQuests == null) return states;
-
-        for (QuestModel quest : allQuests) {
-            if (quest == null) continue;
-            PlayerQuestStateModel state = new PlayerQuestStateModel();
-            state.quest_id = quest.questId != null ? quest.questId : quest.name;
-            state.status = "AVAILABLE";
-            state.questDetails = quest;
-            states.add(state);
-        }
-        return states;
-    }
-
-    private Map<String, QuestModel> indexAllQuests(String category) throws Exception {
-        Map<String, QuestModel> result = new HashMap<>();
-        List<QuestModel> allQuests = ApiClient.getAllQuests(category);
-        if (allQuests == null) return result;
-
-        for (QuestModel quest : allQuests) {
-            if (quest == null) continue;
-            if (quest.questId != null) result.put(quest.questId, quest);
-            if (quest.name != null) result.putIfAbsent(quest.name, quest);
-        }
-        return result;
+        populateList(entries);
     }
 
     private void populateList(List<PlayerQuestStateModel> quests) {
@@ -267,7 +169,8 @@ public class QuestScreen extends Screen {
 
         int added = 0;
         for (PlayerQuestStateModel pq : quests) {
-            if (pq != null && pq.questDetails != null) {
+            if (pq != null && pq.questDetails != null
+                    && ("Completed".equals(currentCategory)?"COMPLETED".equalsIgnoreCase(pq.status):!"COMPLETED".equalsIgnoreCase(pq.status)&&!"FAILED".equalsIgnoreCase(pq.status))) {
                 this.list.add(new QuestEntry(pq));
                 added++;
             }

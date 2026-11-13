@@ -52,4 +52,45 @@ public final class QuestGameTests {
         h.assertTrue(QuestPresentation.knownDialogue(npc).contains("Bonjour voyageur."),"Known dialogue is displayed");
         h.assertTrue(!QuestPresentation.knownDialogue(null).isBlank(),"Missing dialogue has a neutral fallback, never quest ending");h.succeed();
     }
+    private static QuestModel journalQuest(String id,String parent){
+        QuestModel q=new QuestModel();q.questId=id;q.parentId=parent;q.name=id;q.category="Main";return q;
+    }
+    private static fr.renblood.medievalcoins.api.model.PlayerQuestStateModel journalState(String id,String status){
+        var state=new fr.renblood.medievalcoins.api.model.PlayerQuestStateModel();state.quest_id=id;state.status=status;return state;
+    }
+    @GameTest(template="quests_empty",timeoutTicks=30)
+    public static void journalNeverFallsBackToTheCatalogue(GameTestHelper h){
+        var first=journalQuest("p.1",null);var sequel=journalQuest("p.1.1","p.1");
+        var catalogue=java.util.List.of(first,sequel);
+        h.assertTrue(QuestJournalRules.select(catalogue,java.util.List.of(),java.util.Set.of(),"Main").isEmpty(),"An empty journal remains empty for every rank");
+        var active=java.util.List.of(journalState("p.1","IN_PROGRESS"));
+        var visible=QuestJournalRules.select(catalogue,active,java.util.Set.of("p.1.1"),"Main");
+        h.assertTrue(visible.size()==1&&visible.get(0).quest().questId.equals("p.1"),"Only started quest appears, locked sequel stays hidden");h.succeed();
+    }
+    @GameTest(template="quests_empty",timeoutTicks=30)
+    public static void completedQuestsAreOnlyInHistory(GameTestHelper h){
+        var first=journalQuest("p.1",null);var sequel=journalQuest("p.1.1","p.1");var catalogue=java.util.List.of(first,sequel);
+        var done=java.util.List.of(journalState("p.1","COMPLETED"));
+        h.assertTrue(QuestJournalRules.select(catalogue,done,java.util.Set.of("p.1"),"Main").isEmpty(),"Completed quest is not shown as available and unseen sequel stays hidden");
+        h.assertTrue(QuestJournalRules.select(catalogue,done,java.util.Set.of(),"Completed").size()==1,"Own completed quest is available in explicit history");
+        var discovered=QuestJournalRules.select(catalogue,done,java.util.Set.of("p.1.1"),"Main");
+        h.assertTrue(discovered.size()==1&&discovered.get(0).status().equals("AVAILABLE"),"Sequel appears only after discovering it with completed parent");h.succeed();
+    }
+    @GameTest(template="quests_empty",timeoutTicks=30)
+    public static void journalDiscoveryPersistsWithoutCompletingQuest(GameTestHelper h){
+        var data=new net.minecraft.nbt.CompoundTag();QuestDiscovery.discover(data," P.1 ");QuestDiscovery.discover(data,"p.1");
+        var reloaded=data.copy();h.assertTrue(QuestDiscovery.read(reloaded).equals(java.util.Set.of("p.1")),"Discovery is idempotent and survives player NBT save/load");
+        h.assertTrue(!data.contains("MedievalCoinsQuestObjectives"),"Discovery never validates an objective");h.succeed();
+    }
+    @GameTest(template="quests_empty",timeoutTicks=30)
+    public static void journalPacketContainsOnlyPersonalSelection(GameTestHelper h){
+        var q=journalQuest("p.1",null);q.name="Quête découverte";
+        var packet=new fr.renblood.medievalcoins.network.QuestJournalSnapshotMessage(42,"Main","",java.util.List.of(new fr.renblood.medievalcoins.network.QuestJournalSnapshotMessage.Entry(q,"AVAILABLE",java.util.List.of(0))));
+        var buffer=new net.minecraft.network.FriendlyByteBuf(io.netty.buffer.Unpooled.buffer());
+        try{
+            fr.renblood.medievalcoins.network.QuestJournalSnapshotMessage.encode(packet,buffer);
+            var copy=fr.renblood.medievalcoins.network.QuestJournalSnapshotMessage.decode(buffer);
+            h.assertTrue(copy.requestId()==42&&copy.entries().size()==1&&copy.entries().get(0).quest().name.equals(q.name),"Filtered snapshot and accents roundtrip");
+        }finally{buffer.release();}h.succeed();
+    }
 }

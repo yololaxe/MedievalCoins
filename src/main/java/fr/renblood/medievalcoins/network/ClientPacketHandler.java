@@ -12,6 +12,10 @@ import net.minecraftforge.api.distmarker.OnlyIn;
 @OnlyIn(Dist.CLIENT)
 public class ClientPacketHandler {
 
+    public static void handleQuestJournal(QuestJournalSnapshotMessage message){
+        if(Minecraft.getInstance().screen instanceof QuestScreen journal)journal.acceptJournal(message);
+    }
+
     public static void handleMoneyUpdate(MoneyUpdateMessage msg) {
         Minecraft mc = Minecraft.getInstance();
         var screen = mc.screen;
