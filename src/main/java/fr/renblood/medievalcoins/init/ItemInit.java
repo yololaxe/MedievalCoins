@@ -43,7 +43,8 @@ public class ItemInit {
             
     public static final RegistryObject<Item> PIPPIN_MUSIC_DISC =
             CreativeTab.addToTab(REGISTRY.register("pippin_music_disc",
-                    () -> new RecordItem(15, SoundInit.PIPPIN, new Item.Properties().stacksTo(1), 3860)));
+                    () -> new RecordItem(15, SoundInit.PIPPIN, new Item.Properties().stacksTo(1).rarity(net.minecraft.world.item.Rarity.UNCOMMON), fr.renblood.medievalcoins.music.MusicCatalog.LENGTH_TICKS[1])));
+    public static final java.util.Map<Integer,RegistryObject<Item>> MUSIC_DISCS = fr.renblood.medievalcoins.music.MusicDiscs.register(REGISTRY,PIPPIN_MUSIC_DISC);
     // Item de verrouillage supprimé
 
     // Méthode utilitaire pour enregistrer un BlockItem

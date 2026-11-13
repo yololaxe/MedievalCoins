@@ -2,7 +2,7 @@
   "pippin": {
     "sounds": [
       {
-        "name": "medieval_coins:pippin",
+        "name": "medieval_coins:music/renblood_02",
         "stream": true
       }
     ]
@@ -123,6 +123,14 @@
     "sounds": [
       {
         "name": "medieval_coins:music/renblood_15",
+        "stream": true
+      }
+    ]
+  },
+  "music.renblood_16": {
+    "sounds": [
+      {
+        "name": "medieval_coins:music/renblood_16",
         "stream": true
       }
     ]

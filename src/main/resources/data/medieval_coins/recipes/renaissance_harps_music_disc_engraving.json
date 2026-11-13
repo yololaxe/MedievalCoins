@@ -1,0 +1,25 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "group": "renblood_music_discs",
+  "pattern": [
+    " N ",
+    "NPN",
+    " D "
+  ],
+  "key": {
+    "N": {
+      "item": "minecraft:iron_nugget"
+    },
+    "P": {
+      "item": "minecraft:paper"
+    },
+    "D": {
+      "item": "minecraft:red_dye"
+    }
+  },
+  "result": {
+    "item": "medieval_coins:renaissance_harps_music_disc",
+    "count": 1
+  }
+}

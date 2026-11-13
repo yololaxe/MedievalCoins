@@ -39,6 +39,10 @@ public class Banker extends Villager {
 
     @Nullable
     @Override
+    protected net.minecraft.sounds.SoundEvent getAmbientSound() { return net.minecraftforge.fml.ModList.get().isLoaded("npcshopkeeper")?null:super.getAmbientSound(); }
+
+    @Nullable
+    @Override
     public Villager getBreedOffspring(ServerLevel level, AgeableMob otherParent) {
         return new Banker(level, this.blockPosition());
     }

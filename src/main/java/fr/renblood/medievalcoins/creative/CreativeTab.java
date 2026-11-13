@@ -50,6 +50,10 @@ public class CreativeTab {
                     .displayItems((params, output) -> {})
                     .build());
 
+    public static final RegistryObject<CreativeModeTab> MUSIC_TAB=TABS.register("music",
+        ()->CreativeModeTab.builder().title(Component.translatable("itemGroup.medieval_coins.music"))
+            .icon(()->ItemInit.PIPPIN_MUSIC_DISC.get().getDefaultInstance()).withTabsBefore(HERALDRY_TAB.getId()).displayItems((params,output)->{}).build());
+
     public static <T extends Item> RegistryObject<T> addToTab(RegistryObject<T> item) {
         MEDIEVAL_TAB_ITEMS.add(item);
         return item;
@@ -73,7 +77,9 @@ public class CreativeTab {
 
     @SubscribeEvent
     public static void buildContents(BuildCreativeModeTabContentsEvent event) {
-        if (event.getTabKey().equals(HERALDRY_TAB.getKey())) {
+        if(event.getTabKey().equals(MUSIC_TAB.getKey())) {
+            fr.renblood.medievalcoins.music.MusicDiscs.DISCS.values().forEach(item->event.accept(item.get()));
+        } else if (event.getTabKey().equals(HERALDRY_TAB.getKey())) {
             HERALDRY_ITEMS.stream()
                     .sorted(Comparator.comparing(CreativeTab::family)
                             .thenComparingInt(CreativeTab::heraldryOrder)
@@ -86,6 +92,7 @@ public class CreativeTab {
             Coins.ITEMS.getEntries().forEach(item -> items.add(item.get()));
             ItemInit.REGISTRY.getEntries().forEach(item -> items.add(item.get()));
             HERALDRY_ITEMS.forEach(item -> items.remove(item.get()));
+            fr.renblood.medievalcoins.music.MusicDiscs.DISCS.values().forEach(item->items.remove(item.get()));
             items.forEach(event::accept);
         }
     }

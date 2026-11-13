@@ -1,0 +1,25 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "group": "renblood_music_discs",
+  "pattern": [
+    " N ",
+    "NPN",
+    " D "
+  ],
+  "key": {
+    "N": {
+      "item": "minecraft:iron_nugget"
+    },
+    "P": {
+      "item": "minecraft:paper"
+    },
+    "D": {
+      "item": "minecraft:black_dye"
+    }
+  },
+  "result": {
+    "item": "medieval_coins:teller_of_the_tales_music_disc",
+    "count": 1
+  }
+}

@@ -31,7 +31,7 @@ public final class QuestGameTests {
     }
     @GameTest(template="quests_empty",timeoutTicks=30)
     public static void musicRegistry(GameTestHelper h){
-        h.assertTrue(fr.renblood.medievalcoins.music.MusicCatalog.TITLES.length==15,"Fifteen indexed tracks");
-        for(int n=1;n<=15;n++)h.assertTrue(net.minecraftforge.registries.ForgeRegistries.SOUND_EVENTS.containsKey(fr.renblood.medievalcoins.music.MusicCatalog.id(n)),"Every track is registered");h.succeed();
+        h.assertTrue(fr.renblood.medievalcoins.music.MusicCatalog.TITLES.length==16,"Sixteen indexed tracks");
+        for(int n=1;n<=16;n++)h.assertTrue(net.minecraftforge.registries.ForgeRegistries.SOUND_EVENTS.containsKey(fr.renblood.medievalcoins.music.MusicCatalog.id(n)),"Every track is registered");h.succeed();
     }
 }

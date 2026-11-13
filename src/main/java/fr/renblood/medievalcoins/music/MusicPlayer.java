@@ -25,8 +25,8 @@ public final class MusicPlayer {
         }
     }
     private static void stop(){if(current!=null)Minecraft.getInstance().getSoundManager().stop(current);current=null;age=0;}
-    private static void play(int number){if(number<1||number>15)return;stop();last=number;Minecraft.getInstance().getMusicManager().stopPlaying();current=new MusicSound(number,volume);Minecraft.getInstance().getSoundManager().play(current);}
-    private static void next(){int n;do{n=java.util.concurrent.ThreadLocalRandom.current().nextInt(1,16);}while(n==last);play(n);}
+    private static void play(int number){if(number<1||number>MusicCatalog.TITLES.length)return;stop();last=number;Minecraft.getInstance().getMusicManager().stopPlaying();current=new MusicSound(number,volume);Minecraft.getInstance().getSoundManager().play(current);}
+    private static void next(){int n;do{n=java.util.concurrent.ThreadLocalRandom.current().nextInt(1,MusicCatalog.TITLES.length+1);}while(n==last);play(n);}
     @SubscribeEvent public static void tick(TickEvent.ClientTickEvent event){if(event.phase!=TickEvent.Phase.END)return;var mc=Minecraft.getInstance();if(mc.level==null){random=false;stop();return;}if(mc.isPaused())return;if(current!=null&&++age>60&&!mc.getSoundManager().isActive(current)){current=null;if(random&&volume>0)next();}}
     @SubscribeEvent public static void sound(PlaySoundEvent event){if(current!=null&&event.getSound()!=null&&event.getSound()!=current&&event.getSound().getSource()==SoundSource.MUSIC)event.setSound(null);}
     @SubscribeEvent public static void logout(ClientPlayerNetworkEvent.LoggingOut event){random=false;stop();}
