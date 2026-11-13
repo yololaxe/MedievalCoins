@@ -434,7 +434,7 @@ public class QuestScreen extends Screen {
 
     private void updateFinishButtonState() {
         if (this.finishButton == null) return;
-        boolean visible = selectedQuest != null && isManualApprovalQuest(selectedQuest);
+        boolean visible = selectedQuest != null && selectedState != null && "IN_PROGRESS".equalsIgnoreCase(selectedState.status) && isManualApprovalQuest(selectedQuest);
         this.finishButton.visible = visible;
         this.finishButton.active = visible;
     }
