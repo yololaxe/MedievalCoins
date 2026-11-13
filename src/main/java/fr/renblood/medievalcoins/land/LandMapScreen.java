@@ -13,6 +13,7 @@ import java.util.*;
 /** A readable cadastral map; inventory slots are only the server synchronization transport. */
 public class LandMapScreen extends AbstractContainerScreen<LandMapMenu> {
     private static final int INK=0xFF101D25,PANEL=0xFF172B32,GOLD=0xFFE2BE77,PAPER=0xFFECE5D5,MUTED=0xFFABB8B7;
+    private boolean showTerrain=true;private Button terrainButton;
     private LandMapLayout layout;private int selected;private String query="",target="",filteredQuery;private java.util.List<LandMapMenu.PlotChoice> filteredChoices=java.util.List.of();private EditBox search;private Button choose,assign,release,ownerButton;private LandMapAction pending;
     public LandMapScreen(LandMapMenu menu,Inventory inventory,Component title){super(menu,inventory,title);selected=menu.getColumns()/2+(menu.getRows()/2)*menu.getColumns();inventoryLabelY=10000;}
     @Override protected void init(){super.init();layout=LandMapLayout.fit(width,height,menu.getColumns(),menu.getRows());imageWidth=(int)Math.ceil(layout.width()*layout.scale());imageHeight=(int)Math.ceil(layout.height()*layout.scale());leftPos=(int)(layout.x()*layout.scale());topPos=(int)(layout.y()*layout.scale());clearWidgets();choose=assign=release=null;
@@ -20,6 +21,7 @@ public class LandMapScreen extends AbstractContainerScreen<LandMapMenu> {
         int bx=x+18;String[] labels={"Ouest","Nord","Sud","Est","Ici","Actualiser"};int[][] moves={{-1,0},{0,-1},{0,1},{1,0},{99,0},{0,0}};
         for(int i=0;i<labels.length;i++){final int at=i;int bw=i==5?70:42;flat(labels[i],bx,y+64,bw,()->{pending=null;selected=menu.getColumns()/2+(menu.getRows()/2)*menu.getColumns();send(iAction(at),moves[at][0],moves[at][1],"","");});bx+=bw+4;}
         flat("Limites de mon chunk · 20 s",x+18,y+h-33,200,()->{if(minecraft.player!=null){var pos=minecraft.player.chunkPosition();int py=minecraft.player.blockPosition().getY();fr.renblood.medievalcoins.client.renderer.RegionRenderer.addHighlight(new net.minecraft.core.BlockPos(pos.getMinBlockX(),py,pos.getMinBlockZ()),new net.minecraft.core.BlockPos(pos.getMinBlockX()+15,py+3,pos.getMinBlockZ()+15),0xDDE2BE77,400);}onClose();});
+        terrainButton=flat(showTerrain?"Fond : Minecraft":"Fond : grille",x+230,y+h-33,140,()->{showTerrain=!showTerrain;terrainButton.setMessage(Component.literal(showTerrain?"Fond : Minecraft":"Fond : grille"));});
         flat("Fermer",x+w-88,y+h-33,70,this::onClose);
         if(menu.isAdministrator()){
             search=addRenderableWidget(new EditBox(font,rx,y+h-146,rw,18,Component.literal("Rechercher une parcelle")));search.setMaxLength(128);search.setValue(query);search.setHint(Component.literal("Nom ou identifiant…"));search.setResponder(value->{query=value;pending=null;});
@@ -59,9 +61,10 @@ public class LandMapScreen extends AbstractContainerScreen<LandMapMenu> {
         text(g,"LE CADASTRE DU ROYAUME",x+18,y+16,w-36,GOLD);text(g,"Centre : "+menu.centerX()+", "+menu.centerZ()+"  ·  "+menu.dimension()+"  ·  1 case = 16 × 16 blocs",x+18,y+40,w-36,MUTED);
         g.fill(rx-10,y+64,rx+rw+10,y+h-44,PANEL);
         int cols=menu.getColumns(),rows=menu.getRows(),size=layout.cell(),hover=cellAt(mx,my);
+        if(showTerrain)LandTerrainRenderer.render(g,layout,menu);
         for(int row=0;row<rows;row++)for(int col=0;col<cols;col++){
             int index=col+row*cols,cx=layout.mapX()+col*size,cy=layout.mapY()+row*size;var tag=menu.cell(index);String id=tag.getString("id");boolean owned=!id.isBlank(),known=tag.getBoolean("known");int color=tag.getInt("color");int shade=owned?0xFF000000|(((color>>16&255)*35/100)<<16)|(((color>>8&255)*35/100)<<8)|((color&255)*35/100):0xFF15252D;
-            g.fill(cx,cy,cx+size,cy+size,known?shade:0xFF0B131B);if(!known)text(g,"?",cx+size/2-2,cy+size/2-4,12,MUTED);stroke(g,cx,cy,size,size,0xFF2A3C42);
+            g.fill(cx,cy,cx+size,cy+size,!known?0xFF0B131B:showTerrain?(owned?0x66000000|color:0x18000000):shade);if(!known)text(g,"?",cx+size/2-2,cy+size/2-4,12,MUTED);stroke(g,cx,cy,size,size,0xFF2A3C42);
             if(owned){int edge=0xFF000000|color;if(col==0||!id.equals(idAt(index-1)))g.fill(cx,cy,cx+2,cy+size,edge);if(col==cols-1||!id.equals(idAt(index+1)))g.fill(cx+size-2,cy,cx+size,cy+size,edge);if(row==0||!id.equals(idAt(index-cols)))g.fill(cx,cy,cx+size,cy+2,edge);if(row==rows-1||!id.equals(idAt(index+cols)))g.fill(cx,cy+size-2,cx+size,cy+size,edge);}
             if(minecraft.player!=null&&tag.contains("x")&&tag.getInt("x")==minecraft.player.chunkPosition().x&&tag.getInt("z")==minecraft.player.chunkPosition().z){int px=cx+size/2,py=cy+size/2;g.fill(px-3,py-3,px+4,py+4,PAPER);g.fill(px-1,py-1,px+2,py+2,INK);}
             if(index==hover)stroke(g,cx+2,cy+2,size-4,size-4,MUTED);if(index==selected)stroke(g,cx+1,cy+1,size-2,size-2,GOLD);

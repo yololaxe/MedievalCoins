@@ -1,0 +1,19 @@
+{
+  "version": 1,
+  "id": "0cfa9e433c69-v1",
+  "dimension": "minecraft:overworld",
+  "width": 7296,
+  "height": 10112,
+  "tileSize": 512,
+  "columns": 15,
+  "rows": 20,
+  "blocksPerPixel": 1,
+  "anchor": {
+    "pixelX": 2868,
+    "pixelY": 3691,
+    "worldX": -716,
+    "worldZ": -1300
+  },
+  "webBase": "/map/cadastre/0cfa9e433c69-v1",
+  "minecraftBase": "textures/maps/cadastre/0cfa9e433c69-v1"
+}
