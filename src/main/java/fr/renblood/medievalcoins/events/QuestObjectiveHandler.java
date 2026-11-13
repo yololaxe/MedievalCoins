@@ -557,7 +557,7 @@ public final class QuestObjectiveHandler {
         if (quest.objectives != null) {
             for (int i = 0; i < quest.objectives.size(); i++) {
                 objectives.add(new NpcQuestInteractionModel.ObjectiveProgress(
-                        i, objectiveDescription(quest.objectives.get(i)), progress.getBoolean(Integer.toString(i))));
+                        i, objectiveDescription(quest, quest.objectives.get(i)), progress.getBoolean(Integer.toString(i))));
             }
         }
         List<String> missing = getMissingObjectives(player, quest.questId, quest);
@@ -574,7 +574,7 @@ public final class QuestObjectiveHandler {
         if (quest.objectives == null) return missing;
         CompoundTag progress = getQuestProgress(player, questId);
         for (int i = 0; i < quest.objectives.size(); i++) {
-            if (!progress.getBoolean(Integer.toString(i))) missing.add(objectiveDescription(quest.objectives.get(i)));
+            if (!progress.getBoolean(Integer.toString(i))) missing.add(objectiveDescription(quest, quest.objectives.get(i)));
         }
         return missing;
     }
@@ -617,9 +617,9 @@ public final class QuestObjectiveHandler {
         }
     }
 
-    private static String objectiveDescription(QuestModel.Objective objective) {
+    private static String objectiveDescription(QuestModel quest, QuestModel.Objective objective) {
         if (objective == null) return "Objectif";
-        String customDescription = objective.description == null ? "" : objective.description.trim();
+        String customDescription = fr.renblood.medievalcoins.quest.QuestPresentation.instructions(quest, objective);
         return switch (normalize(objective.type)) {
             case "talk", "npc" -> customDescription.isBlank()
                     ? "Parler au PNJ " + firstNonBlank(objective.getTargetNpcId(), "{npc}")

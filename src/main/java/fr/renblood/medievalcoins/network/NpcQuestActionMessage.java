@@ -40,6 +40,15 @@ public record NpcQuestActionMessage(String npcId, String npcName, String texture
                         return;
                     }
 
+                    if ("DIALOGUE".equals(message.action)) {
+                        var npc=ApiClient.getNpcs().stream().filter(n->n!=null&&message.npcId.equalsIgnoreCase(n.npcId)).findFirst().orElse(null);
+                        if(npc==null)throw new IllegalStateException("Profil du PNJ indisponible");
+                        MedievalCoinsAPI.showNpcDialogue(player, npc.name,
+                                NpcQuestInteractionModel.resolveNpcText(fr.renblood.medievalcoins.quest.QuestPresentation.knownDialogue(npc),npc.name),
+                                npc.texture);
+                        return;
+                    }
+
                     NpcQuestInteractionModel quest = MedievalCoinsAPI.getNpcQuestInteractions(player, message.npcId).stream()
                             .filter(entry -> entry.questId().equalsIgnoreCase(message.questId)).findFirst().orElse(null);
                     if (quest == null) return;
@@ -66,15 +75,13 @@ public record NpcQuestActionMessage(String npcId, String npcName, String texture
                             player.getServer().execute(() -> TutorialManager.recordRomeroQuestCompleted(player));
                         }
                         QuestObjectiveHandler.syncAvailableNpcQuestsAsync(player);
-                    } else if ("DIALOGUE".equals(message.action)) {
-                        MedievalCoinsAPI.showNpcDialogue(player, message.npcName,
-                                NpcQuestInteractionModel.resolveNpcText(
-                                        "AVAILABLE".equalsIgnoreCase(quest.status()) ? quest.beginText() : quest.endText(),
-                                        message.npcName),
-                                message.texture);
+
                     }
                 } catch (Exception e) {
                     MedievalCoin.LOGGER.error("Erreur action quete PNJ", e);
+                    if("DIALOGUE".equals(message.action))player.getServer().execute(()->{
+                        if(!player.hasDisconnected())player.sendSystemMessage(net.minecraft.network.chat.Component.literal("Dialogue indisponible pour le moment. Réessaie dans quelques instants.").withStyle(net.minecraft.ChatFormatting.RED));
+                    });
                 }
             });
         }

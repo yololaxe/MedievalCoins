@@ -34,4 +34,22 @@ public final class QuestGameTests {
         h.assertTrue(fr.renblood.medievalcoins.music.MusicCatalog.TITLES.length==16,"Sixteen indexed tracks");
         for(int n=1;n<=16;n++)h.assertTrue(net.minecraftforge.registries.ForgeRegistries.SOUND_EVENTS.containsKey(fr.renblood.medievalcoins.music.MusicCatalog.id(n)),"Every track is registered");h.succeed();
     }
+    @GameTest(template="quests_empty",timeoutTicks=30)
+    public static void roleplayUsesAuthoredInstructions(GameTestHelper h){
+        var q=new Gson().fromJson("{\"objectives\":[{\"id\":\"o1\",\"type\":\"RP\"}],\"implementation\":{\"status\":\"DONE\",\"summary\":\"Ramener Elys Drakon auprès de DON\",\"tasks\":[]}}",QuestModel.class);
+        h.assertTrue(QuestPresentation.instructions(q,q.objectives.get(0)).equals("Ramener Elys Drakon auprès de DON"),"RP displays the editor's implementation summary");
+        q.objectives.get(0).description="Une consigne spécifique";
+        h.assertTrue(QuestPresentation.instructions(q,q.objectives.get(0)).equals("Une consigne spécifique"),"Explicit objective wording wins");h.succeed();
+    }
+    @GameTest(template="quests_empty",timeoutTicks=30)
+    public static void implementationTasksAreInstructionsNotProgress(GameTestHelper h){
+        var q=new Gson().fromJson("{\"objectives\":[{\"type\":\"CONSTRUCTION\"}],\"implementation\":{\"tasks\":[{\"label\":\"Construire le pont\",\"status\":\"DONE\",\"notes\":\"secret technique\"}]}}",QuestModel.class);
+        h.assertTrue(QuestPresentation.instructions(q,q.objectives.get(0)).equals("Construire le pont"),"Only authored labels are shown, without technical notes/status");h.succeed();
+    }
+    @GameTest(template="quests_empty",timeoutTicks=30)
+    public static void ordinaryDialogueDoesNotUseQuestEnding(GameTestHelper h){
+        var npc=new fr.renblood.medievalcoins.api.model.NpcModel();npc.dialogue=java.util.List.of("Bonjour voyageur.","Bienvenue à Shaleton.");
+        h.assertTrue(QuestPresentation.knownDialogue(npc).contains("Bonjour voyageur."),"Known dialogue is displayed");
+        h.assertTrue(!QuestPresentation.knownDialogue(null).isBlank(),"Missing dialogue has a neutral fallback, never quest ending");h.succeed();
+    }
 }

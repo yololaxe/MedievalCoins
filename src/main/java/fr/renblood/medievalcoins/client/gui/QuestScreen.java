@@ -442,8 +442,9 @@ public class QuestScreen extends Screen {
         String prefix = completed ? "[OK] " : "[ ] ";
         int color = completed ? GREEN : TEXT_MUTED;
 
-        if (obj.description != null && !obj.description.isEmpty()) {
-            String objDesc = obj.description.replace("{player}", playerName).replace("{npc}", npcName);
+        String instruction = fr.renblood.medievalcoins.quest.QuestPresentation.instructions(selectedQuest, obj);
+        if (!instruction.isBlank()) {
+            String objDesc = instruction.replace("{player}", playerName).replace("{npc}", npcName);
             y = drawBulletLine(gg, fontRenderer, prefix + objDesc, x, y, width, color);
         }
 
@@ -453,7 +454,7 @@ public class QuestScreen extends Screen {
             }
             return y;
         }
-        if (obj.description != null && !obj.description.isEmpty()) return y;
+        if (!instruction.isBlank()) return y;
         if ("LOCATION".equals(obj.type)) {
             return drawBulletLine(gg, fontRenderer, prefix + "Se rendre en " + safeText(obj.coord, "position inconnue"), x, y, width, color);
         }
@@ -465,7 +466,7 @@ public class QuestScreen extends Screen {
         }
         if ("RP".equalsIgnoreCase(obj.type) || "ROLEPLAY".equalsIgnoreCase(obj.type)
                 || "ROLE_PLAY".equalsIgnoreCase(obj.type)) {
-            return drawBulletLine(gg, fontRenderer, prefix + "RP", x, y, width, color);
+            return drawBulletLine(gg, fontRenderer, prefix + "Réaliser l’action demandée, puis demander sa validation.", x, y, width, color);
         }
 
         return drawBulletLine(gg, fontRenderer, prefix + safeText(obj.type, "Objectif") + " "

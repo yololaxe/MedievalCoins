@@ -88,6 +88,10 @@ public class NpcQuestInteractionsScreen extends Screen {
             y += 24;
         }
 
+        addRenderableWidget(Button.builder(Component.literal("Parler à " + safe(npcName, "ce PNJ")),
+                        button -> send("DIALOGUE"))
+                .bounds(width - 132, height - 32, 114, 20).build());
+
         if (selected == null) return;
 
         String status = normalize(selected.status());
@@ -102,15 +106,13 @@ public class NpcQuestInteractionsScreen extends Screen {
             addRenderableWidget(complete);
         }
 
-        addRenderableWidget(Button.builder(Component.literal("Parler à " + safe(npcName, "ce PNJ")),
-                        button -> send("DIALOGUE"))
-                .bounds(width - 132, height - 32, 114, 20).build());
+
     }
 
     private void send(String action) {
-        if (selected != null) {
+        if (selected != null || "DIALOGUE".equals(action)) {
             MedievalCoin.PACKET_HANDLER.sendToServer(
-                    new NpcQuestActionMessage(npcId, npcName, texture, selected.questId(), action));
+                    new NpcQuestActionMessage(npcId, npcName, texture, selected==null?"":selected.questId(), action));
         }
     }
 

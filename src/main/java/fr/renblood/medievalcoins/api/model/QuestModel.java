@@ -51,7 +51,18 @@ public class QuestModel {
     public Map<String, String> beginText;
     public Map<String, String> endText;
 
+    public Implementation implementation;
+    public static class Implementation {
+        public String summary;
+        public List<ImplementationTask> tasks;
+    }
+    public static class ImplementationTask {
+        public String label;
+        public String objectiveId;
+    }
+
     public static class Objective {
+        public String id;
         public String type;
         public List<ItemRequirement> items;
         public String coord;
